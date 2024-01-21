@@ -108,7 +108,7 @@
                     <div class="col-md-6 col-md-offset-3">
                         <h2>About</h2>
                         <img src="assets/img/lines.svg" class="img-lines" alt="lines">
-                        <p>Hello! I'm Benedict, a penultimate year student currently pursing my degree in Electronics and Data Engineering at Singapore Institute of Technology (SIT) and Technical University of Munich (TUM) asia. <br> With over five years of valuable work experience in the Republic of Singapore Air Force prior to my degree, I've gained a solid foundation in mechanical, electronics, and data analytics. This journey has not only honed my technical skills but also equipped me with essential soft skills, including effective verbal communication and writing abilities.</p>
+                        <p>Hello! I'm Benedict, a year 3 student currently pursing my degree in Electronics and Data Engineering at Singapore Institute of Technology (SIT) and Technical University of Munich (TUM) asia. <br> With over five years of valuable work experience in the Republic of Singapore Air Force prior to my degree, I've gained a solid foundation in mechanical, electronics, and data analytics. This journey has not only honed my technical skills but also equipped me with essential soft skills, including effective verbal communication and writing abilities.</p>
                         <a href="assets\Resume.pdf" class="btn btn-fill" target="_blank" download>Download my resume</a>
                     </div>
                 </div>
@@ -428,6 +428,7 @@
           </div>
           <div class="modal-body">
             <h4 class="modal-title">Data Analytics Practice</h4>
+            <p><em>Sep - Oct 2023</em></p><br>
             <p><a href="assets\missingdata.csv" class="btn btn-fill" target="_blank" download>Download CSV file</a></p><br>
             <p><b>Introduction: </b></p>
             <p><em>This project is undertaken with the primary objective of acquiring and refining proficiency in data analytics through the utilization of Python coding, executed within the Jupyter Notebook environment.</em></p><br>
@@ -445,8 +446,41 @@
             <p>After understanding the data on what the parameters are, where the missing values are, and that there are no duplicated rows, data pre-processing can be proceeded to clean up the data set.</p>
             <p><b>Data pre-processing: </b></p>
             <p><em>Data pre-processing is required to find outliers, abnormalities, duplicates, and to fill up the missing values to help with a clearer data analysis and visualisation. </em></p><br>
-            <p> 1. Splitting of data into individual data sets based on it's condition.</p>
-            <p></p>
+            <p>1. Splitting of data into individual data sets based on it's condition.</p>
+            <p>2. Filling of missing values using backfill/frontfill/interpolate.</p>
+            <p>3. Combining all data back into 1 table.</p>
+            <p>4. Checking of any outliers.</p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_5.JPG" alt="Initial Data Set"><br>
+            <p><em>Initially, the data was partitioned into three distinct tables based on its condition. Subsequently, a systematic approach was applied to address missing or null values within these tables. If the missing value was located in the top row, a backfilling procedure was employed; conversely, if the missing value was in the last row, a front-filling technique was implemented. For cases where missing values were dispersed throughout the middle of the table, interpolation was applied to ensure a comprehensive and accurate dataset. This meticulous handling of missing values was chosen over outright removal of corresponding rows to maintain consistency and enhance the accuracy of the dataset for subsequent analysis. Finally, the three processed data tables were amalgamated into a single table, which was then saved as a processed data file.</em>></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_6.JPG" alt="Initial Data Set">
+            <p><em>Codes to check for any outliers using boxplot.</em></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_7.png" alt="Initial Data Set"><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_8.png" alt="Initial Data Set"><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_9.png" alt="Initial Data Set"><br>
+            <p>The analysis reveals the presence of an outlier in the Normal 1 condition, specifically in the Material Cushion parameter. Given the limited dataset with only 50 data points in Normal 1, it is deemed appropriate to eliminate this outlier. This decision aims to mitigate any adverse impact on the mean and standard deviation, considering the relatively small size of the dataset where the removal of a single row is not anticipated to significantly affect the overall data integrity.</p><br>
+            <p><b>Conclusion of pre-processing results: </b></p>
+            <p>Data pre-processing is undertaken to enhance data cleanliness, ensuring optimal accuracy in subsequent data analysis involving statistical analysis and visualization. Upon a thorough examination of the raw data, a single row, identified as an outlier, was removed. Additionally, missing values were addressed through a comprehensive approach involving front-filling, back-filling, and interpolation methods.</p><br><br>
+            <p><b>Statistical analysis: </b></p><br>
+            <p><em>This involves computing the mean, median, range, and standard deviation for each parameter within each condition, facilitating meaningful comparisons.</em></p>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_10.JPG" alt="Initial Data Set">
+            <p><em>Codes to find the mean, median, range and standard deviation.</em></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_11.JPG" alt="Initial Data Set">
+            <p><em>Table 2: Mean values for each condition</em></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_12.JPG" alt="Initial Data Set">
+            <p><em>Table 3: Median values for each condition</em></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_13.JPG" alt="Initial Data Set">
+            <p><em>Table 4: Range values for each condition</em></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_14.JPG" alt="Initial Data Set">
+            <p><em>Table 5: Standard deviation values for each condition</em></p><br>
+            <p>Various parameters exhibit diverse scales and magnitudes of change. For instance, a standard deviation of 50 for maximum injection temperature may not carry the same significance as a standard deviation of 0.02 in material cushion, given the substantial difference in scales between the two. With maximum injection temperature typically measured in the thousands and material cushion often less than 1, these disparities can obscure the relative importance of standard deviation changes. To address this, the Min-Max normalization technique was employed to express standard deviation changes as percentages. In this context, Normal 1 served as a reference point, with Conditions 4 and 7 representing percentage changes from the Normal 1 value. Consequently, all central tendencies of the normalized Normal 1 value are centered around 0. This approach ensures a meaningful magnitude comparison of standard deviations across different scenarios.</p>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_15.JPG" alt="Initial Data Set">
+            <p><em>Normalised mean values for each condition</em></p><br>
+            <img style="max-width: 100%; height: auto; display: block; margin: 0 auto;" src="assets/img/DA_16.JPG" alt="Initial Data Set">
+            <p><em>Normalised median values for each condition</em></p><br>
+            <p><b>Conclusion for statistical analysis: </b></p>
+            <p>From the statistical analysis, especially in normalised mean and median, it is clear to see which parameters are different for Condition 4 and Condition 7 in comparison to Normal 1.<br><br>The main differences are as follows: <br>• For Condition 4 to Normal 1, the parameters that have the most significant differences which most likely influences Condition 4 are switch-over volume and material cushion.<br>• For Condition 7 to Normal 1, the parameters that have the most significant differences and most likely influences Condition 7 are injection time and maximum injection pressure.<br><br>These four parameters, two for each condition, have a difference of more than 10% compared to Normal 1. It is analysed that these two parameters are likely the causal settings that affect the other parameters. This will be further analysed in detail through data visualization to confirm this hypothesis.</p><br>
+            <p><b>Data visualisation: </b></p>
+            
           </div>
         </div><!-- /.modal-content -->
       </div><!-- /.modal-dialog -->
