@@ -306,6 +306,62 @@ details.group .gbody{padding:2px 18px 18px}
 .pc li b{color:var(--ink); font-weight:650}
 
 /* ============================================================
+   Projection — chart, legend, table
+   Series hues are the validated categorical slots 1 / 3 / 2,
+   re-stepped for the dark surface rather than flipped.
+   ============================================================ */
+.viz{
+  --s-contrib:#2a78d6;
+  --s-growth:#1baf7a;
+  --s-alt:#eb6834;
+  position:relative;
+}
+@media (prefers-color-scheme: dark){
+  .viz{ --s-contrib:#3987e5; --s-growth:#199e70; --s-alt:#d95926; }
+}
+.viz svg{display:block; width:100%; height:auto}
+.viz-legend{
+  display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center;
+  font-size:12.5px; color:var(--ink-2); margin-bottom:10px;
+}
+.viz-legend b{color:var(--ink); font-weight:650}
+.lg{display:inline-flex; align-items:center; gap:7px}
+.lg i{width:11px; height:11px; border-radius:3px; flex:none; font-style:normal}
+.lg i.line{height:0; border-top:2px dashed var(--s-alt); border-radius:0; width:16px}
+.viz-tip{
+  position:absolute; pointer-events:none; opacity:0; transition:opacity .12s ease;
+  background:var(--surface); border:1px solid var(--line-2); border-radius:var(--radius-sm);
+  box-shadow:var(--shadow); padding:9px 11px; font-size:12px; min-width:172px; z-index:5;
+}
+.viz-tip .tt-age{font-weight:700; font-size:12.5px; margin-bottom:5px}
+.viz-tip .tt-r{display:flex; justify-content:space-between; gap:14px; line-height:1.6}
+.viz-tip .tt-r span:first-child{color:var(--ink-2); display:flex; align-items:center; gap:6px}
+.viz-tip .tt-r span:last-child{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.viz-tip i{width:9px; height:9px; border-radius:2px; display:inline-block; flex:none}
+
+/* Six tiles, so a fixed 3-up grid rather than auto-fit leaving dead cells. */
+.stats{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:18px}
+@media (max-width:780px){ .stats{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:400px){ .stats{grid-template-columns:1fr} }
+.stat{background:var(--surface); padding:13px 15px}
+.stat-k{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3); font-weight:700; margin-bottom:3px}
+.stat-v{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:21px; font-weight:650; letter-spacing:-.04em}
+.stat-n{font-size:11.5px; color:var(--ink-3); margin-top:2px; line-height:1.4}
+.stat-v.keep{color:var(--keep)} .stat-v.tax{color:var(--tax)}
+
+.ptable{width:100%; border-collapse:collapse; font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:12px}
+.ptable th{
+  text-align:right; font-family:var(--sans); font-size:10.5px; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--ink-3); font-weight:700;
+  padding:6px 8px; border-bottom:1px solid var(--line-2); position:sticky; top:0; background:var(--surface);
+}
+.ptable th:first-child, .ptable td:first-child{text-align:left}
+.ptable td{padding:5px 8px; text-align:right; border-bottom:1px solid var(--line); white-space:nowrap}
+.ptable tr.coast td{color:var(--ink-3)}
+.ptable tr.flag td{background:var(--warn-soft)}
+.tscroll{max-height:340px; overflow:auto; border:1px solid var(--line); border-radius:var(--radius-sm)}
+
+/* ============================================================
    Notices
    ============================================================ */
 .notice{
@@ -658,6 +714,76 @@ details.group .gbody{padding:2px 18px 18px}
       <div class="movelist" id="moves"></div>
     </section>
 
+    <section class="card" style="margin-top:26px">
+      <div class="card-head"><h2>4 · Project it forward</h2>
+        <p class="sub">Contribute the same amount every year and let it compound. The comparison arm is the <b>same net cost</b>: skip the contribution, pay the extra tax, and invest what's left outside the scheme — where Singapore doesn't tax your gains.</p>
+      </div>
+      <div class="card-body">
+
+        <div class="row2" style="gap:12px 18px; margin-bottom:14px">
+          <div class="field">
+            <label class="lbl" for="pVehicle">Where the money goes</label>
+            <select id="pVehicle">
+              <option value="srs">SRS — invested, taxed on withdrawal</option>
+              <option value="cpf">CPF cash top-up — 4% risk-free, tax-free out</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="lbl" for="pAnnual">Contribution each year</label>
+            <div class="money"><input type="number" id="pAnnual" value="15300" min="0" step="500"></div>
+            <div class="hint" id="pCapHint"></div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="pYears">Years of contributing</label>
+            <input type="number" id="pYears" value="25" min="1" max="50" step="1">
+          </div>
+          <div class="field">
+            <label class="lbl" for="pReturn">Expected return / yr</label>
+            <input type="number" id="pReturn" value="5" min="0" max="20" step="0.25">
+            <div class="hint" id="pReturnHint">Idle SRS cash earns 0.05%. This assumes you invest it.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="pGrowth">Salary growth / yr</label>
+            <input type="number" id="pGrowth" value="3" min="0" max="20" step="0.5">
+            <div class="hint">Drives your marginal rate in later years.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="pWithdrawAge">Withdrawal starts at age</label>
+            <input type="number" id="pWithdrawAge" value="64" min="40" max="90" step="1">
+            <div class="hint" id="pAgeHint">SRS locks to the statutory retirement age when you first contribute — 64 from 1 Jul 2026.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="pRetireIncome">Other taxable income in retirement / yr</label>
+            <div class="money"><input type="number" id="pRetireIncome" value="0" min="0" step="1000"></div>
+            <div class="hint">Withdrawals stack on top of this.</div>
+          </div>
+        </div>
+
+        <div class="stats" id="pStats"></div>
+
+        <div class="viz" id="viz">
+          <div class="viz-legend" id="pLegend"></div>
+          <div id="pChart"></div>
+          <div class="viz-tip" id="pTip"></div>
+        </div>
+
+        <div id="pNotes" style="margin-top:18px"></div>
+
+        <details class="group" style="border-top:1px solid var(--line); margin-top:18px">
+          <summary style="padding-left:0; padding-right:0">Year by year<span class="gtag" id="pRowCount"></span></summary>
+          <div class="gbody" style="padding-left:0; padding-right:0">
+            <div class="tscroll"><table class="ptable" id="pTable"></table></div>
+          </div>
+        </details>
+
+        <div class="pc" style="border:1px solid var(--line); border-radius:var(--radius); margin-top:18px">
+          <div class="pc-col pros"><div class="pc-h">What the projection assumes</div><ul id="pAssume"></ul></div>
+          <div class="pc-col cons"><div class="pc-h">Why it could be wrong</div><ul id="pRisk"></ul></div>
+        </div>
+
+      </div>
+    </section>
+
   </div>
 </div>
 
@@ -884,7 +1010,32 @@ function wmcrAmount(n, regime, earnedIncome) {
 }
 
 /* ============================================================
-   5. The model
+   5. Assessment core
+   ------------------------------------------------------------
+   One year, assessed. `otherReliefs` is everything except Earned
+   Income Relief and CPF Relief, which are derived here. Shared by
+   the live calculator and the projection so the two can't drift.
+   ============================================================ */
+
+function assess(p) {
+  const bonus  = p.monthlyGross * p.bonusMonths;
+  const cpf    = computeCpf(p.monthlyGross, bonus, p.cfg, p.age, p.member);
+  const gross  = p.monthlyGross * 12 + bonus;
+  const earnedIncome = Math.max(0, gross - p.expenses);
+  const rEarned = earnedIncomeRelief(p.age, earnedIncome);
+  const assessable = Math.max(0, gross + p.otherIncome - p.expenses - p.donations * 2.5);
+  const reliefRaw  = rEarned + cpf.eeYear + p.otherReliefs;
+  const reliefUsed = Math.min(reliefRaw, RELIEF_CAP);
+  const chargeable = Math.max(0, assessable - reliefUsed);
+  return {
+    bonus, cpf, gross, earnedIncome, rEarned, rCpf: cpf.eeYear, assessable,
+    reliefRaw, reliefUsed, chargeable, tax: taxOn(chargeable),
+    capHit: reliefRaw > RELIEF_CAP
+  };
+}
+
+/* ============================================================
+   6. The model
    ============================================================ */
 
 function model() {
@@ -947,26 +1098,110 @@ function model() {
   const rNsWife = $('nsWife').checked ? 750 : 0;
   const rNsPar  = intOf('nsParent') * 750;
 
-  const reliefRaw = rEarned + rCpf + rSrs + rTopSelf + rTopFam + rVc + rLife +
-                    rSpouse + rQcr + rWmcr + rParent + rGcr + rSib +
-                    rNsman + rNsWife + rNsPar;
-  const reliefUsed = Math.min(reliefRaw, RELIEF_CAP);
+  // Everything except Earned Income Relief and CPF Relief, which assess() derives.
+  const otherReliefs = rSrs + rTopSelf + rTopFam + rVc + rLife +
+                       rSpouse + rQcr + rWmcr + rParent + rGcr + rSib +
+                       rNsman + rNsWife + rNsPar;
+
+  const base = {
+    cfg, member, age, monthlyGross, bonusMonths: bMonths,
+    otherIncome: other, expenses, donations, otherReliefs
+  };
+  const a = assess(base);
+
+  const reliefRaw = a.reliefRaw;
+  const reliefUsed = a.reliefUsed;
   const reliefHeadroom = Math.max(0, RELIEF_CAP - reliefRaw);
 
-  const chargeable = Math.max(0, assessable - reliefUsed);
-  const grossTax   = taxOn(chargeable);
+  const chargeable = a.chargeable;
+  const grossTax   = a.tax;
   const ptr        = Math.min(numOf('ptr'), grossTax);
   const netTax     = Math.max(0, grossTax - ptr);
   const marginal   = marginalRate(chargeable);
 
   return {
-    year, cfg, member, age, mode,
+    year, cfg, member, age, mode, base, otherReliefs,
     monthlyGross, bonus, gross, cpf, takeHome,
     other, expenses, donations, earnedIncome, totalIncome, assessable,
     rEarned, rCpf, rSrs, srsCap, rTopSelf, rTopFam, rVc, vcRoom, rLife, lifeRoom,
     rSpouse, rQcr, rWmcr, rParent, rGcr, rSib, rNsman, rNsWife, rNsPar,
     reliefRaw, reliefUsed, reliefHeadroom,
     chargeable, grossTax, ptr, netTax, marginal, mandatoryTotal
+  };
+}
+
+/* ============================================================
+   7. Projection
+   ------------------------------------------------------------
+   Contribute `annual` each year for `years`, then let it compound
+   to the withdrawal age. The comparison arm is the SAME NET COST:
+   skip the contribution, pay the extra tax, and invest what's left
+   outside the scheme — where Singapore doesn't tax the gains.
+   ============================================================ */
+
+const WITHDRAW_YEARS = 10;
+
+function project(m, o) {
+  const isSrs = o.vehicle === 'srs';
+  const cap   = isSrs ? m.srsCap : CPF_TOPUP_CAP;
+  const contrib = Math.min(o.annual, cap);
+  // Strip out whatever the user already entered for this vehicle so the
+  // projection replaces it rather than stacking on top of it.
+  const baseOther = Math.max(0, m.otherReliefs - (isSrs ? m.rSrs : m.rTopSelf));
+
+  const rows = [];
+  let balance = 0, principal = 0, cumTax = 0, alt = 0;
+  const endAge = Math.max(m.age + o.years, o.withdrawAge);
+
+  for (let age = m.age; age < endAge; age++) {
+    const i = age - m.age;
+    const contributing = i < o.years;
+    const c = contributing ? contrib : 0;
+    const monthlyGross = m.monthlyGross * Math.pow(1 + o.growth, i);
+    const yr = {...m.base, age, monthlyGross};
+
+    const withC    = assess({...yr, otherReliefs: baseOther + c});
+    const withoutC = assess({...yr, otherReliefs: baseOther});
+    const saved    = Math.max(0, withoutC.tax - withC.tax);
+
+    principal += c;
+    cumTax    += saved;
+    balance = (balance + c) * (1 + o.ret);
+    alt     = (alt + (c - saved)) * (1 + o.ret);   // same net cost, invested outside
+
+    rows.push({
+      age, contributing, income: withC.gross, contrib: c, saved, cumTax,
+      principal, balance, growth: balance - principal, alt,
+      marginal: marginalRate(withoutC.chargeable),
+      wasted: withC.reliefRaw > RELIEF_CAP && c > 0
+    });
+  }
+
+  // Drawdown. SRS: 10 slices, 50% of each is taxable. CPF: no tax on withdrawal.
+  const draw = (start, taxable) => {
+    let bal = start, total = 0, tax = 0;
+    for (let k = 0; k < WITHDRAW_YEARS; k++) {
+      const w = bal / (WITHDRAW_YEARS - k);
+      bal = (bal - w) * (1 + o.ret);
+      total += w;
+      if (taxable) tax += taxOn(Math.max(0, 0.5 * w + o.retireIncome));
+    }
+    return {total, tax};
+  };
+
+  const srsDraw = draw(balance, isSrs);
+  const altDraw = draw(alt, false);           // gains outside SRS aren't taxed
+  const net     = srsDraw.total - srsDraw.tax;
+
+  return {
+    rows, contrib, cap, capped: o.annual > cap,
+    principal, cumTax, balance, growth: balance - principal,
+    withdrawn: srsDraw.total, withdrawTax: srsDraw.tax, net,
+    // altDrawn is the 10-year drawdown total, comparable with `net`.
+    // rows[].alt is the pot at that age, comparable with rows[].balance.
+    altDrawn: altDraw.total, edge: net - altDraw.total,
+    isSrs, years: o.years, withdrawAge: o.withdrawAge,
+    anyWasted: rows.some(r => r.wasted)
   };
 }
 
@@ -1320,6 +1555,249 @@ function renderMoves(moves) {
   }).join('');
 }
 
+/* ---------- projection chart ---------- */
+
+function moneyShort(n) {
+  const a = Math.abs(n);
+  if (a >= 1e6) return '$' + (n / 1e6).toFixed(a >= 1e7 ? 0 : 1) + 'm';
+  if (a >= 1e3) return '$' + Math.round(n / 1e3) + 'k';
+  return '$' + Math.round(n);
+}
+
+function niceTicks(max, count) {
+  if (!(max > 0)) return [0, 1];
+  const raw = max / count;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  const out = [];
+  for (let v = 0; v <= max + step * 1e-6; v += step) out.push(v);
+  return out;
+}
+
+// Built at the container's true pixel width so 1 viewBox unit = 1 CSS px and
+// label text never shrinks below its stated size on a narrow screen.
+function chartGeom() {
+  const avail = $('pChart').clientWidth || 760;
+  const W = Math.max(300, Math.min(760, avail));
+  const narrow = W < 520;
+  return {W, H: narrow ? 260 : 330, L: narrow ? 46 : 66, R: narrow ? 12 : 108, T: 16, B: 34, narrow};
+}
+
+function buildChart(p) {
+  const rows = p.rows, n = rows.length;
+  const {W, H, L, R, T, B, narrow} = chartGeom();
+  const iw = W - L - R, ih = H - T - B;
+  const peak = Math.max(1, ...rows.map(r => Math.max(r.balance, r.alt)));
+  const ticks = niceTicks(peak, 4);
+  const maxY = ticks[ticks.length - 1];
+  const X = i => L + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw);
+  const Y = v => T + ih - (v / maxY) * ih;
+
+  const up = key => rows.map((r, i) => (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(r[key]).toFixed(1)).join('');
+  const band = (top, bot) => {
+    let d = up(top);
+    for (let i = n - 1; i >= 0; i--) d += 'L' + X(i).toFixed(1) + ' ' + Y(bot ? rows[i][bot] : 0).toFixed(1);
+    return d + 'Z';
+  };
+
+  const grid = ticks.map(t =>
+    '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + Y(t).toFixed(1) + '" y2="' + Y(t).toFixed(1) +
+    '" stroke="var(--line)" stroke-width="1"/>' +
+    '<text x="' + (L - 10) + '" y="' + (Y(t) + 4).toFixed(1) + '" text-anchor="end" font-size="11" ' +
+    'fill="var(--ink-3)" font-family="var(--mono)">' + moneyShort(t) + '</text>'
+  ).join('');
+
+  const stepX = Math.max(1, Math.ceil(n / (narrow ? 4 : 8)));
+  const xlab = rows.map((r, i) =>
+    (i % stepX === 0 || i === n - 1)
+      ? '<text x="' + X(i).toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle" font-size="11" ' +
+        'fill="var(--ink-3)" font-family="var(--mono)">' + r.age + '</text>' : ''
+  ).join('');
+
+  // Direct labels for the final year, nudged apart so they can't collide.
+  const last = rows[n - 1];
+  const labels = [
+    {y: Y(last.principal / 2),                       t: moneyShort(last.principal), c: 'var(--s-contrib)', k: 'put in'},
+    {y: Y((last.principal + last.balance) / 2),      t: moneyShort(last.growth),    c: 'var(--s-growth)',  k: 'growth'},
+    {y: Y(last.alt),                                 t: moneyShort(last.alt),       c: 'var(--s-alt)',     k: 'outside'}
+  ].sort((a, b) => a.y - b.y);
+  for (let i = 1; i < labels.length; i++) {
+    if (labels[i].y - labels[i - 1].y < 26) labels[i].y = labels[i - 1].y + 26;
+  }
+  // No room for direct labels on a narrow chart — the legend and the
+  // year-by-year table carry identity there instead.
+  const labelSvg = narrow ? '' : labels.map(l =>
+    '<text x="' + (W - R + 10) + '" y="' + Math.min(l.y, H - B).toFixed(1) + '" font-size="12.5" font-weight="700" ' +
+      'fill="' + l.c + '" font-family="var(--mono)">' + l.t + '</text>' +
+    '<text x="' + (W - R + 10) + '" y="' + (Math.min(l.y, H - B) + 13).toFixed(1) + '" font-size="10.5" ' +
+      'fill="var(--ink-3)" font-family="var(--sans)">' + l.k + '</text>'
+  ).join('');
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" ' +
+      'aria-label="Projected balance by age: contributions and investment growth stacked, against the same net cost invested outside the scheme. Figures are in the table below.">' +
+    grid + xlab +
+    '<path d="' + band('principal') + '" fill="var(--s-contrib)" opacity=".92"/>' +
+    '<path d="' + band('balance', 'principal') + '" fill="var(--s-growth)" opacity=".92"/>' +
+    // 2px surface gap between the stacked fills
+    '<path d="' + up('principal') + '" fill="none" stroke="var(--surface)" stroke-width="2"/>' +
+    '<path d="' + up('alt') + '" fill="none" stroke="var(--s-alt)" stroke-width="2" ' +
+      'stroke-dasharray="6 4" stroke-linecap="round"/>' +
+    '<line id="pCross" x1="0" x2="0" y1="' + T + '" y2="' + (T + ih) + '" stroke="var(--ink-3)" ' +
+      'stroke-width="1" stroke-dasharray="3 3" opacity="0"/>' +
+    '<rect id="pHit" x="' + L + '" y="' + T + '" width="' + iw + '" height="' + ih + '" fill="transparent"/>' +
+    labelSvg +
+  '</svg>';
+}
+
+function wireChartHover(p) {
+  const svg = $('pChart').querySelector('svg');
+  if (!svg) return;
+  const hit = svg.querySelector('#pHit'), cross = svg.querySelector('#pCross');
+  const tip = $('pTip'), viz = $('viz'), rows = p.rows, n = rows.length;
+  const g = chartGeom(), L = g.L, iw = g.W - g.L - g.R;
+
+  const move = ev => {
+    const box = svg.getBoundingClientRect();
+    const px = ((ev.clientX - box.left) / box.width) * g.W;
+    const i = Math.max(0, Math.min(n - 1, Math.round(((px - L) / iw) * (n - 1))));
+    const r = rows[i];
+    const xs = L + (n <= 1 ? iw / 2 : (i / (n - 1)) * iw);
+    cross.setAttribute('x1', xs); cross.setAttribute('x2', xs);
+    cross.setAttribute('opacity', '1');
+    tip.innerHTML =
+      '<div class="tt-age">Age ' + r.age + (r.contributing ? '' : ' · no longer contributing') + '</div>' +
+      '<div class="tt-r"><span><i style="background:var(--s-contrib)"></i>Put in</span><span>' + money(r.principal) + '</span></div>' +
+      '<div class="tt-r"><span><i style="background:var(--s-growth)"></i>Growth</span><span>' + money(r.growth) + '</span></div>' +
+      '<div class="tt-r"><span><i style="background:var(--ink-2)"></i>Balance</span><span>' + money(r.balance) + '</span></div>' +
+      '<div class="tt-r"><span><i style="background:var(--s-alt)"></i>Outside</span><span>' + money(r.alt) + '</span></div>' +
+      '<div class="tt-r"><span>Tax saved so far</span><span>' + money(r.cumTax) + '</span></div>';
+    const vb = viz.getBoundingClientRect();
+    const left = box.left - vb.left + (xs / g.W) * box.width;
+    tip.style.left = Math.max(0, Math.min(left + 14, Math.max(0, vb.width - 190))) + 'px';
+    tip.style.top  = (box.top - vb.top + 12) + 'px';
+    tip.style.opacity = '1';
+  };
+  hit.addEventListener('mousemove', move);
+  hit.addEventListener('mouseleave', () => { tip.style.opacity = '0'; cross.setAttribute('opacity', '0'); });
+}
+
+let lastVehicle = null;
+
+function renderProjection(m) {
+  const vehicle = $('pVehicle').value;
+  const isSrs = vehicle === 'srs';
+
+  // Sensible defaults follow the vehicle, but only when it actually changes.
+  if (lastVehicle !== null && lastVehicle !== vehicle) {
+    $('pReturn').value = isSrs ? '5' : '4';
+    $('pWithdrawAge').value = isSrs ? '64' : '65';
+    $('pAnnual').value = String(isSrs ? m.srsCap : CPF_TOPUP_CAP);
+  }
+  lastVehicle = vehicle;
+
+  const p = project(m, {
+    vehicle,
+    annual: numOf('pAnnual'),
+    years: Math.max(1, intOf('pYears') || 1),
+    ret: numOf('pReturn') / 100,
+    growth: numOf('pGrowth') / 100,
+    withdrawAge: Math.max(m.age + 1, intOf('pWithdrawAge') || 64),
+    retireIncome: numOf('pRetireIncome')
+  });
+
+  $('pCapHint').textContent = 'Capped at ' + money(p.cap) + ' a year' +
+    (p.capped ? ' — your figure is above the cap, so the projection uses ' + money(p.contrib) + '.' : '.');
+  $('pReturnHint').textContent = isSrs
+    ? 'Idle SRS cash earns 0.05% a year. This assumes you actually invest it.'
+    : 'CPF SA/RA pays 4% plus the extra-interest tiers — 5% is optimistic, 4% is the floor.';
+  $('pAgeHint').textContent = isSrs
+    ? 'SRS locks to the statutory retirement age as at your first contribution — 64 from 1 Jul 2026.'
+    : 'CPF payout eligibility age is 65. Before that the money cannot be touched at all.';
+
+  // --- stats ---
+  const stats = [
+    {k: 'Total put in',    v: money(p.principal), n: money(p.contrib) + ' a year for ' + p.years + ' years'},
+    {k: 'Total tax saved', v: money(p.cumTax), cls: 'keep',
+     n: 'across ' + p.years + ' years of relief'},
+    {k: 'Balance at ' + p.withdrawAge, v: money(p.balance),
+     n: money(p.growth) + ' of it is investment growth'},
+    {k: isSrs ? 'Tax on withdrawal' : 'Tax on withdrawal', v: money(p.withdrawTax), cls: p.withdrawTax > 0 ? 'tax' : '',
+     n: isSrs ? '50% of each withdrawal is taxable' : 'CPF withdrawals are not taxed'},
+    {k: 'Net in your hands', v: money(p.net),
+     n: 'drawn over ' + WITHDRAW_YEARS + ' years, still growing'},
+    {k: 'Versus investing outside', v: (p.edge >= 0 ? '+' : '−') + money(Math.abs(p.edge)),
+     cls: p.edge >= 0 ? 'keep' : 'tax',
+     n: p.edge >= 0 ? 'the scheme wins by this much' : 'you would do better outside'}
+  ];
+  $('pStats').innerHTML = stats.map(s =>
+    '<div class="stat"><div class="stat-k">' + s.k + '</div>' +
+    '<div class="stat-v ' + (s.cls || '') + '">' + s.v + '</div>' +
+    '<div class="stat-n">' + s.n + '</div></div>').join('');
+
+  // --- legend + chart ---
+  $('pLegend').innerHTML =
+    '<span class="lg"><i style="background:var(--s-contrib)"></i>What you put in</span>' +
+    '<span class="lg"><i style="background:var(--s-growth)"></i>Investment growth</span>' +
+    '<span class="lg"><i class="line"></i>Same net cost, invested outside</span>';
+  $('pChart').innerHTML = buildChart(p);
+  wireChartHover(p);
+
+  // --- table ---
+  const head = '<thead><tr><th>Age</th><th>Gross income</th><th>Marginal</th><th>Put in</th>' +
+    '<th>Tax saved</th><th>Cumulative</th><th>Balance</th><th>Outside</th></tr></thead>';
+  const body = p.rows.map(r =>
+    '<tr class="' + (r.contributing ? '' : 'coast') + (r.wasted ? ' flag' : '') + '">' +
+      '<td>' + r.age + '</td><td>' + money(r.income) + '</td><td>' + pct(r.marginal) + '</td>' +
+      '<td>' + (r.contrib ? money(r.contrib) : '—') + '</td>' +
+      '<td>' + (r.saved ? money(r.saved) : '—') + '</td>' +
+      '<td>' + money(r.cumTax) + '</td><td>' + money(r.balance) + '</td><td>' + money(r.alt) + '</td>' +
+    '</tr>').join('');
+  $('pTable').innerHTML = head + '<tbody>' + body + '</tbody>';
+  $('pRowCount').textContent = p.rows.length + ' years';
+
+  // --- notes ---
+  const pn = [];
+  if (p.capped) {
+    pn.push(['warn', 'You entered more than the ' + money(p.cap) + ' annual cap, so the projection uses ' + money(p.contrib) + '. Anything above the cap gets no relief at all.']);
+  }
+  if (p.anyWasted) {
+    const first = p.rows.find(r => r.wasted);
+    pn.push(['warn', 'From age ' + first.age + ' your salary growth pushes total reliefs past the ' + money(RELIEF_CAP) + ' cap, so part of the contribution stops earning any relief. Those years are shaded in the table.']);
+  }
+  if (p.cumTax === 0 && p.principal > 0) {
+    pn.push(['info', 'No tax saved: your chargeable income never rises above the $20,000 threshold across these years, so the relief has nothing to bite on. Contributing here locks money away for no tax benefit.']);
+  }
+  if (isSrs && p.edge < 0) {
+    pn.push(['warn', 'At these settings SRS <b>loses</b> to simply investing outside it by ' + money(Math.abs(p.edge)) +
+      '. That happens when your marginal rate today is low relative to the tax on withdrawal — the relief you get going in is worth less than the tax you pay coming out. Check your marginal rate before committing.']);
+  } else if (isSrs) {
+    pn.push(['info', 'The edge comes from two things: relief at ' + pct(m.marginal) + ' today, and only 50% of each withdrawal being taxable later. Drawing ' + money(p.withdrawn / WITHDRAW_YEARS) + ' a year means roughly ' + money(p.withdrawn / WITHDRAW_YEARS / 2) + ' of taxable income a year — ' + (p.withdrawTax === 0 ? 'which lands under the $20,000 tax-free band, so you pay nothing on the way out.' : 'which does attract tax.')]);
+  }
+  $('pNotes').innerHTML = pn.map(n => '<div class="notice ' + n[0] + '">' + n[1] + '</div>').join('');
+
+  // --- assumptions / risks ---
+  $('pAssume').innerHTML = [
+    'Your salary grows <b>' + numOf('pGrowth') + '% a year</b> and your bonus stays at ' + numOf('bonusMonths') + ' months.',
+    'Investments return <b>' + numOf('pReturn') + '% a year</b>, every year, with no fees.',
+    'Your other reliefs stay as entered, and CPF rates, tax bands and the ' + money(RELIEF_CAP) + ' cap never change.',
+    isSrs
+      ? 'You withdraw over the full ' + WITHDRAW_YEARS + '-year window from age ' + p.withdrawAge + ', with the balance still invested as you draw it.'
+      : 'The balance is drawn over ' + WITHDRAW_YEARS + ' years from age ' + p.withdrawAge + ' — in reality CPF converts to lifelong CPF LIFE payouts instead.',
+    'The comparison arm invests the identical net cost outside the scheme, where investment gains are not taxed in Singapore.'
+  ].map(s => '<li>' + s + '</li>').join('');
+
+  $('pRisk').innerHTML = [
+    '<b>Returns are not a straight line.</b> A flat ' + numOf('pReturn') + '% hides sequence risk — a bad decade early leaves you far short of this figure.',
+    '<b>Tax rules will change over ' + p.rows.length + ' years.</b> Bands, the relief cap, the 50% SRS concession and the retirement age are all policy, and policy moves.',
+    isSrs
+      ? '<b>The withdrawal tax assumes today\'s bands.</b> If rates rise, or you have more retirement income than entered, the tax on the way out grows and the edge shrinks.'
+      : '<b>CPF money is the least accessible of all.</b> There is no early withdrawal at any penalty — if you need it at 50, it is simply not available.',
+    '<b>Inflation is not modelled.</b> Every figure here is in today\'s dollars only in the sense that nothing is deflated — ' + money(p.net) + ' in ' + (p.withdrawAge - m.age) + ' years buys materially less than it does now.',
+    '<b>The comparison assumes you actually invest the alternative.</b> If the money would otherwise be spent, the scheme\'s lock-in is a feature, not a cost.'
+  ].map(s => '<li>' + s + '</li>').join('');
+}
+
 function render() {
   const m = model();
   const cfg = m.cfg;
@@ -1437,6 +1915,8 @@ function render() {
     tn.push(['info', 'Your ' + money(m.donations) + ' of donations is deducted at 250% — ' + money(m.donations * 2.5) + ' — before reliefs, and is not restricted by the $80,000 cap.']);
   }
   $('taxNotes').innerHTML = tn.map(n => '<div class="notice ' + n[0] + '">' + n[1] + '</div>').join('');
+
+  renderProjection(m);
 }
 
 /* ============================================================
@@ -1444,6 +1924,17 @@ function render() {
    ============================================================ */
 document.addEventListener('input', render);
 document.addEventListener('change', render);
+
+// The chart is sized to its container, so it has to be rebuilt when that changes.
+let resizeTimer = null, lastWidth = 0;
+window.addEventListener('resize', () => {
+  const w = $('pChart').clientWidth;
+  if (w === lastWidth) return;
+  lastWidth = w;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(render, 120);
+});
+
 render();
 </script>
 </body>
