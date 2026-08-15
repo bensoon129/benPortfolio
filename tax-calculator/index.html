@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SG Income Tax &amp; CPF Calculator</title>
+<meta name="description" content="Work backwards from your take-home pay to gross salary, employer CPF and your Singapore income tax bill — then see every legal way to reduce it, with the trade-offs spelled out.">
+<style>
+/* ============================================================
+   Tokens
+   ============================================================ */
+:root{
+  --bg:#F2F3F7;
+  --surface:#FFFFFF;
+  --surface-2:#F7F8FB;
+  --surface-3:#ECEFF6;
+  --ink:#16192B;
+  --ink-2:#565C75;
+  --ink-3:#858BA3;
+  --line:#DEE1EA;
+  --line-2:#C9CEDC;
+  --accent:#2B4EE6;
+  --accent-ink:#1B34A8;
+  --accent-soft:#E7EBFF;
+  --keep:#0E7A57;
+  --keep-soft:#DDF3EA;
+  --tax:#C4353F;
+  --tax-soft:#FBE4E5;
+  --warn:#8A5209;
+  --warn-soft:#FBEEDA;
+  --radius:10px;
+  --radius-sm:6px;
+  --shadow:0 1px 2px rgba(22,25,43,.06), 0 6px 20px -12px rgba(22,25,43,.28);
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"Cascadia Mono","Roboto Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101220;
+    --surface:#191C2C;
+    --surface-2:#1F2334;
+    --surface-3:#272C40;
+    --ink:#EDEFF6;
+    --ink-2:#A7ADC2;
+    --ink-3:#7E859C;
+    --line:#2E3348;
+    --line-2:#3C4259;
+    --accent:#7D93FF;
+    --accent-ink:#A9B7FF;
+    --accent-soft:#242A48;
+    --keep:#4ECFA1;
+    --keep-soft:#16302A;
+    --tax:#FF8A90;
+    --tax-soft:#361D22;
+    --warn:#E5B057;
+    --warn-soft:#33270F;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.8);
+  }
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0; line-height:1.2; letter-spacing:-.02em; font-weight:650}
+p{margin:0 0 .7em}
+p:last-child{margin-bottom:0}
+a{color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.03em}
+
+/* ============================================================
+   Shell
+   ============================================================ */
+.wrap{max-width:1220px; margin:0 auto; padding:0 20px}
+
+.masthead{
+  border-bottom:1px solid var(--line);
+  background:var(--surface);
+}
+.masthead .wrap{
+  display:flex; flex-wrap:wrap; gap:16px 24px;
+  align-items:center; justify-content:space-between;
+  padding-top:20px; padding-bottom:20px;
+}
+.brand{display:flex; gap:14px; align-items:baseline; flex-wrap:wrap}
+.brand h1{font-size:22px}
+.eyebrow{
+  font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:650;
+}
+.yearpick{display:flex; gap:8px; align-items:center; font-size:13px; color:var(--ink-2)}
+
+/* Sticky headline result */
+.tape{
+  position:sticky; top:0; z-index:30;
+  background:var(--surface); border-bottom:1px solid var(--line);
+  box-shadow:0 6px 20px -18px rgba(0,0,0,.6);
+}
+.tape .wrap{display:flex; gap:8px; overflow-x:auto; padding-top:10px; padding-bottom:10px}
+.tape-item{flex:1 0 auto; min-width:132px; padding:2px 14px 2px 0}
+.tape-item + .tape-item{border-left:1px solid var(--line); padding-left:14px}
+.tape-k{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); font-weight:650; white-space:nowrap}
+.tape-v{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:19px; font-weight:600; letter-spacing:-.04em; white-space:nowrap}
+.tape-v.tax{color:var(--tax)}
+.tape-v.keep{color:var(--keep)}
+
+.layout{display:grid; grid-template-columns:minmax(0,380px) minmax(0,1fr); gap:28px; padding:28px 0 72px}
+@media (max-width:940px){ .layout{grid-template-columns:minmax(0,1fr); gap:20px} }
+
+.rail{position:sticky; top:76px; align-self:start; max-height:calc(100vh - 96px); overflow-y:auto; padding-right:4px}
+@media (max-width:940px){ .rail{position:static; max-height:none; overflow:visible} }
+
+/* ============================================================
+   Cards & fields
+   ============================================================ */
+.card{
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow);
+  margin-bottom:16px;
+}
+.card-head{padding:16px 18px 0}
+.card-body{padding:16px 18px}
+.card h2{font-size:17px}
+.card h3{font-size:15px}
+.sub{font-size:13px; color:var(--ink-2); margin-top:4px}
+
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+label.lbl{display:block; font-size:13px; font-weight:600; margin-bottom:5px}
+.hint{font-size:12px; color:var(--ink-3); margin-top:4px; line-height:1.45}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+@media (max-width:420px){ .row2{grid-template-columns:1fr} }
+
+input[type=number], input[type=text], select{
+  width:100%; font:inherit; color:var(--ink);
+  background:var(--surface-2); border:1px solid var(--line-2);
+  border-radius:var(--radius-sm); padding:8px 10px;
+  font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:14px;
+}
+select{font-family:var(--sans)}
+input[type=number]:hover, select:hover{border-color:var(--ink-3)}
+input[type=number]:focus, select:focus{border-color:var(--accent); outline:2px solid var(--accent-soft); outline-offset:0}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{opacity:.4}
+.money{position:relative}
+.money input{padding-left:24px}
+.money::before{
+  content:"$"; position:absolute; left:10px; top:50%; transform:translateY(-50%);
+  color:var(--ink-3); font-family:var(--mono); font-size:14px; pointer-events:none;
+}
+
+.seg{display:flex; background:var(--surface-3); border-radius:var(--radius-sm); padding:3px; gap:3px}
+.seg label{
+  flex:1; text-align:center; font-size:13px; font-weight:600; padding:6px 8px;
+  border-radius:4px; cursor:pointer; color:var(--ink-2); white-space:nowrap;
+}
+.seg input{position:absolute; opacity:0; width:0; height:0}
+.seg input:checked + span{color:var(--surface)}
+.seg label:has(input:checked){background:var(--accent); color:#fff}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent); outline-offset:1px}
+
+.check{display:flex; gap:9px; align-items:flex-start; font-size:13.5px; cursor:pointer; margin-bottom:9px}
+.check:last-child{margin-bottom:0}
+.check input{margin:3px 0 0; accent-color:var(--accent); width:15px; height:15px; flex:none}
+
+details.group{border-top:1px solid var(--line)}
+details.group > summary{
+  list-style:none; cursor:pointer; padding:13px 18px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  font-weight:650; font-size:14px;
+}
+details.group > summary::-webkit-details-marker{display:none}
+details.group > summary:hover{background:var(--surface-2)}
+/* A chevron, not "+/−" — a minus sign sitting next to a dollar figure reads as negative. */
+details.group > summary::after{
+  content:""; flex:none; width:8px; height:8px; margin-right:2px;
+  border-right:2px solid var(--ink-3); border-bottom:2px solid var(--ink-3);
+  transform:rotate(45deg) translate(-2px,-2px); transition:transform .18s ease;
+}
+details.group[open] > summary::after{transform:rotate(-135deg) translate(-3px,-3px)}
+details.group .gbody{padding:2px 18px 18px}
+.gtag{
+  font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px;
+  color:var(--ink-2); font-weight:500; margin-left:auto;
+}
+.gtag.on{color:var(--keep); font-weight:650}
+
+/* ============================================================
+   Ledger lines
+   ============================================================ */
+.ledger{width:100%; border-collapse:collapse}
+.ledger td{padding:7px 0; border-bottom:1px dotted var(--line-2); vertical-align:baseline}
+.ledger tr:last-child td{border-bottom:none}
+.ledger td:first-child{font-size:13.5px; color:var(--ink-2); padding-right:12px}
+.ledger td:last-child{
+  text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums;
+  font-size:14px; white-space:nowrap;
+}
+.ledger tr.total td{
+  border-top:2px solid var(--ink); border-bottom:none; padding-top:10px;
+  font-weight:700; font-size:15px;
+}
+.ledger tr.total td:first-child{color:var(--ink); font-size:14px}
+.ledger tr.sub td:first-child{padding-left:14px; color:var(--ink-3); font-size:12.5px}
+.ledger tr.sub td:last-child{color:var(--ink-3); font-size:13px}
+.ledger td .neg{color:var(--ink-2)}
+
+/* ============================================================
+   Signature: bracket ladder
+   ============================================================ */
+.ladder{margin-top:4px}
+.rung{
+  display:grid; grid-template-columns:118px minmax(0,1fr) 88px;
+  gap:12px; align-items:center; padding:4px 0;
+  font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:12px;
+  color:var(--ink-3);
+}
+.rung-band{white-space:nowrap; letter-spacing:-.04em}
+.rung-track{
+  position:relative; height:16px; border-radius:3px;
+  background:var(--surface-3); overflow:hidden;
+}
+.rung-fill{
+  position:absolute; inset:0 auto 0 0; width:0;
+  background:linear-gradient(90deg,var(--accent) 0%, var(--accent) 100%);
+  opacity:.28; transition:width .22s cubic-bezier(.4,0,.2,1);
+}
+.rung-rate{
+  position:absolute; left:7px; top:50%; transform:translateY(-50%);
+  font-size:11px; font-weight:650; color:var(--ink-2); letter-spacing:0;
+}
+.rung-amt{text-align:right; white-space:nowrap}
+.rung.filled{color:var(--ink-2)}
+.rung.filled .rung-fill{opacity:.85; background:var(--accent)}
+.rung.filled .rung-rate{color:#fff}
+.rung.marginal .rung-band{color:var(--ink); font-weight:700}
+.rung.marginal .rung-track{box-shadow:0 0 0 2px var(--accent-soft), 0 0 0 3px var(--accent)}
+.rung.marginal .rung-amt{color:var(--ink); font-weight:700}
+.rung-ghost{
+  position:absolute; top:0; bottom:0; width:3px; background:var(--keep);
+  border-radius:2px; box-shadow:0 0 0 1.5px var(--surface);
+  transition:left .22s cubic-bezier(.4,0,.2,1);
+}
+.ladder-key{
+  display:flex; gap:16px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-3);
+  margin-top:10px; padding-top:10px; border-top:1px solid var(--line);
+}
+.key-swatch{display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:5px; vertical-align:-1px}
+
+/* ============================================================
+   Suggestion cards
+   ============================================================ */
+.movelist{display:grid; gap:14px}
+.move{
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--line-2);
+  border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;
+}
+.move.live{border-left-color:var(--keep)}
+.move.info{border-left-color:var(--ink-3)}
+.move.dead{border-left-color:var(--line-2); opacity:.72}
+.move-head{
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px 16px;
+  align-items:start; padding:15px 18px 12px;
+}
+.move-title{font-size:15.5px; font-weight:650; letter-spacing:-.01em}
+.move-what{font-size:13.5px; color:var(--ink-2); margin-top:3px}
+.move-save{text-align:right; white-space:nowrap}
+.move-save .amt{
+  display:block; font-family:var(--mono); font-variant-numeric:tabular-nums;
+  font-size:22px; font-weight:650; letter-spacing:-.04em; color:var(--keep);
+}
+.move-save .cap{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); font-weight:650}
+.move.info .move-save .amt, .move.dead .move-save .amt{color:var(--ink-3); font-size:15px}
+.move-meta{
+  display:flex; flex-wrap:wrap; gap:6px; padding:0 18px 13px;
+}
+.chip{
+  font-size:11.5px; font-weight:600; padding:3px 8px; border-radius:20px;
+  background:var(--surface-3); color:var(--ink-2);
+  font-family:var(--mono); font-variant-numeric:tabular-nums; letter-spacing:-.02em;
+}
+.chip.good{background:var(--keep-soft); color:var(--keep)}
+.chip.warn{background:var(--warn-soft); color:var(--warn)}
+.pc{display:grid; grid-template-columns:1fr 1fr; border-top:1px solid var(--line)}
+@media (max-width:640px){ .pc{grid-template-columns:1fr} .pc .pc-col + .pc-col{border-top:1px solid var(--line)} }
+.pc-col{padding:13px 18px 15px}
+.pc-col + .pc-col{border-left:1px solid var(--line)}
+@media (max-width:640px){ .pc-col + .pc-col{border-left:none} }
+.pc-h{
+  font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+  font-weight:700; margin-bottom:8px;
+}
+.pc-col.pros .pc-h{color:var(--keep)}
+.pc-col.cons .pc-h{color:var(--tax)}
+.pc ul{margin:0; padding:0; list-style:none}
+.pc li{position:relative; padding-left:15px; font-size:13px; line-height:1.5; margin-bottom:7px; color:var(--ink-2)}
+.pc li:last-child{margin-bottom:0}
+.pc li::before{position:absolute; left:0; top:0; font-family:var(--mono); font-size:12px}
+.pc-col.pros li::before{content:"+"; color:var(--keep)}
+.pc-col.cons li::before{content:"−"; color:var(--tax)}
+.pc li b{color:var(--ink); font-weight:650}
+
+/* ============================================================
+   Notices
+   ============================================================ */
+.notice{
+  border-radius:var(--radius-sm); padding:11px 13px; font-size:13px; line-height:1.5;
+  border:1px solid transparent; margin-bottom:14px;
+}
+.notice:last-child{margin-bottom:0}
+.notice.warn{background:var(--warn-soft); border-color:rgba(138,82,9,.25); color:var(--warn)}
+.notice.info{background:var(--accent-soft); border-color:rgba(43,78,230,.2); color:var(--accent-ink)}
+.notice b{font-weight:700}
+
+.foot{border-top:1px solid var(--line); background:var(--surface); padding:26px 0 40px; font-size:12.5px; color:var(--ink-2)}
+.foot h3{font-size:13px; margin-bottom:8px}
+.foot ul{margin:0 0 16px; padding-left:18px}
+.foot li{margin-bottom:5px}
+.foot .cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:24px}
+
+.disclaimer{
+  background:var(--warn-soft); border:1px solid rgba(138,82,9,.25); color:var(--warn);
+  border-radius:var(--radius-sm); padding:12px 14px; font-size:12.5px; line-height:1.5;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms !important; animation-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="brand">
+      <h1>Singapore Income Tax &amp; CPF Calculator</h1>
+      <span class="eyebrow" id="basisLabel">YA 2027 basis</span>
+    </div>
+    <div class="yearpick">
+      <label class="lbl" for="incomeYear" style="margin:0">Income year</label>
+      <select id="incomeYear" style="width:auto">
+        <option value="2026" selected>2026 → YA 2027 (provisional)</option>
+        <option value="2025">2025 → YA 2026 (confirmed)</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<div class="tape">
+  <div class="wrap">
+    <div class="tape-item"><div class="tape-k">Gross / year</div><div class="tape-v num" id="tGross">$0</div></div>
+    <div class="tape-item"><div class="tape-k">Take-home / year</div><div class="tape-v num keep" id="tNet">$0</div></div>
+    <div class="tape-item"><div class="tape-k">Employer CPF</div><div class="tape-v num" id="tErCpf">$0</div></div>
+    <div class="tape-item"><div class="tape-k">Tax payable</div><div class="tape-v num tax" id="tTax">$0</div></div>
+    <div class="tape-item"><div class="tape-k">Effective rate</div><div class="tape-v num" id="tEff">0.00%</div></div>
+    <div class="tape-item"><div class="tape-k">Marginal rate</div><div class="tape-v num" id="tMarg">0%</div></div>
+  </div>
+</div>
+
+<div class="wrap layout">
+
+  <!-- ==================== INPUT RAIL ==================== -->
+  <div class="rail">
+
+    <section class="card">
+      <div class="card-head"><h2>1 · Your pay</h2>
+        <p class="sub">Singapore has no monthly tax withholding — your payslip only deducts CPF. So take-home = gross − employee CPF, and the tax bill arrives separately.</p>
+      </div>
+      <div class="card-body">
+
+        <div class="field">
+          <span class="lbl">CPF status</span>
+          <div class="seg">
+            <label><input type="radio" name="cpfStatus" value="member" checked><span>Citizen / PR</span></label>
+            <label><input type="radio" name="cpfStatus" value="none"><span>Foreigner (no CPF)</span></label>
+          </div>
+          <div class="hint">Foreigners on an EP/S Pass don't contribute to CPF, so gross = take-home, and there's no CPF relief.</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label class="lbl" for="age">Age in the income year</label>
+            <input type="number" id="age" value="30" min="16" max="99" step="1">
+          </div>
+          <div class="field">
+            <label class="lbl" for="bonusMonths">Bonus (months of pay)</label>
+            <input type="number" id="bonusMonths" value="2" min="0" max="36" step="0.25">
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl">What figure do you know?</span>
+          <div class="seg">
+            <label><input type="radio" name="inputMode" value="net" checked><span>Take-home</span></label>
+            <label><input type="radio" name="inputMode" value="gross"><span>Gross</span></label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="lbl" for="monthlyPay"><span id="payLabel">Monthly take-home (after CPF)</span></label>
+          <div class="money"><input type="number" id="monthlyPay" value="4000" min="0" step="50"></div>
+          <div class="hint" id="payHint">The number that actually hits your bank account each month, before bonus.</div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label class="lbl" for="otherIncome">Other taxable income / yr</label>
+            <div class="money"><input type="number" id="otherIncome" value="0" min="0" step="100"></div>
+            <div class="hint">Net rent, freelance, trade income.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="empExpenses">Employment expenses / yr</label>
+            <div class="money"><input type="number" id="empExpenses" value="0" min="0" step="100"></div>
+            <div class="hint">Unreimbursed, wholly for work.</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>2 · Reliefs &amp; deductions</h2>
+        <p class="sub">Everything you claim is capped at <b class="num">$80,000</b> of total personal reliefs per Year of Assessment.</p>
+      </div>
+
+      <details class="group" open>
+        <summary>Automatic <span class="gtag" id="gAuto">$0</span></summary>
+        <div class="gbody">
+          <table class="ledger">
+            <tr><td>Earned Income Relief</td><td class="num" id="rEarned">$0</td></tr>
+            <tr><td>CPF Relief (compulsory employee CPF)</td><td class="num" id="rCpf">$0</td></tr>
+          </table>
+          <div class="hint" style="margin-top:8px">Both are computed by IRAS from your income and CPF records — you don't claim them manually.</div>
+        </div>
+      </details>
+
+      <details class="group">
+        <summary>Retirement &amp; savings <span class="gtag" id="gRetire">$0</span></summary>
+        <div class="gbody">
+          <div class="field">
+            <label class="lbl" for="srs">SRS contributions this year</label>
+            <div class="money"><input type="number" id="srs" value="0" min="0" step="500"></div>
+            <div class="hint" id="srsHint">Cap $15,300 (Citizen/PR).</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="cpfTopSelf">CPF cash top-up — own SA/RA</label>
+            <div class="money"><input type="number" id="cpfTopSelf" value="0" min="0" step="500"></div>
+            <div class="hint">Relief capped at $8,000.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="cpfTopFam">CPF cash top-up — family</label>
+            <div class="money"><input type="number" id="cpfTopFam" value="0" min="0" step="500"></div>
+            <div class="hint">Parents, grandparents, spouse, siblings. Relief capped at $8,000.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="vcMa">Voluntary contribution to MediSave</label>
+            <div class="money"><input type="number" id="vcMa" value="0" min="0" step="500"></div>
+            <div class="hint" id="vcHint">Your room: $0</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="lifePrem">Life insurance premiums paid</label>
+            <div class="money"><input type="number" id="lifePrem" value="0" min="0" step="100"></div>
+            <div class="hint" id="lifeHint">Only claimable when your employee CPF is under $5,000 for the year.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="group">
+        <summary>Family <span class="gtag" id="gFamily">$0</span></summary>
+        <div class="gbody">
+          <div class="field">
+            <label class="lbl" for="spouse">Spouse relief</label>
+            <select id="spouse">
+              <option value="0">Not claiming</option>
+              <option value="2000">Spouse Relief — $2,000</option>
+              <option value="5500">Spouse Relief (Disability) — $5,500</option>
+            </select>
+            <div class="hint">Spouse must have annual income of $4,000 or less (no income test for the disability version).</div>
+          </div>
+          <div class="row2">
+            <div class="field">
+              <label class="lbl" for="kids">Children (QCR)</label>
+              <input type="number" id="kids" value="0" min="0" max="12" step="1">
+            </div>
+            <div class="field">
+              <label class="lbl" for="kidsDis">Children with disability</label>
+              <input type="number" id="kidsDis" value="0" min="0" max="12" step="1">
+            </div>
+          </div>
+          <div class="hint" style="margin:-6px 0 14px">$4,000 each, or $7,500 each for Child Relief (Disability). Splittable with your spouse — enter only your share.</div>
+
+          <label class="check"><input type="checkbox" id="isWorkingMother"><span>I'm a working mother claiming WMCR</span></label>
+          <div id="wmcrBox" style="display:none">
+            <div class="row2">
+              <div class="field">
+                <label class="lbl" for="wmcrKids">Qualifying children</label>
+                <input type="number" id="wmcrKids" value="0" min="0" max="12" step="1">
+              </div>
+              <div class="field">
+                <label class="lbl" for="wmcrRegime">Child born</label>
+                <select id="wmcrRegime">
+                  <option value="fixed">On/after 1 Jan 2024</option>
+                  <option value="pct">Before 1 Jan 2024</option>
+                </select>
+              </div>
+            </div>
+            <div class="hint" style="margin:-6px 0 14px">From 1 Jan 2024 births: fixed $8,000 / $10,000 / $12,000 for the 1st / 2nd / 3rd-and-later child. Earlier births keep the old 15% / 20% / 25% of earned income. QCR + WMCR is capped at $50,000 per child.</div>
+          </div>
+
+          <div class="row2">
+            <div class="field">
+              <label class="lbl" for="parents">Dependant parents (max 2)</label>
+              <input type="number" id="parents" value="0" min="0" max="2" step="1">
+            </div>
+            <div class="field">
+              <label class="lbl" for="parentMode">Their situation</label>
+              <select id="parentMode">
+                <option value="9000">Living with me — $9,000</option>
+                <option value="5500">Not living with me — $5,500</option>
+                <option value="14000">Disability, living with me — $14,000</option>
+                <option value="10000">Disability, not living with me — $10,000</option>
+              </select>
+            </div>
+          </div>
+          <div class="hint" style="margin:-6px 0 14px">Each parent/grandparent must be 55+ (no age limit if disabled) with income of $8,000 or less.</div>
+
+          <label class="check"><input type="checkbox" id="gcr"><span>Grandparent Caregiver Relief — $3,000 <span style="color:var(--ink-3)">(working mother, a grandparent cares for your child)</span></span></label>
+          <div class="field" style="margin-top:10px">
+            <label class="lbl" for="siblings">Siblings with disability</label>
+            <input type="number" id="siblings" value="0" min="0" max="6" step="1">
+            <div class="hint">$5,500 each.</div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="ptr">Parenthood Tax Rebate to use this year</label>
+            <div class="money"><input type="number" id="ptr" value="0" min="0" step="500"></div>
+            <div class="hint">A <b>rebate</b>, not a relief — it comes straight off the tax bill and isn't touched by the $80,000 cap. $5,000 / $10,000 / $20,000 for the 1st / 2nd / 3rd+ child.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="group">
+        <summary>National Service <span class="gtag" id="gNs">$0</span></summary>
+        <div class="gbody">
+          <div class="field">
+            <label class="lbl" for="nsman">NSman Self Relief</label>
+            <select id="nsman">
+              <option value="0">Not applicable</option>
+              <option value="3000">Did NS activities — $3,000</option>
+              <option value="5000">Did NS activities, key appointment holder — $5,000</option>
+              <option value="1500">No NS activities — $1,500</option>
+              <option value="3500">No NS activities, key appointment holder — $3,500</option>
+            </select>
+          </div>
+          <label class="check"><input type="checkbox" id="nsWife"><span>NSman Wife Relief — $750</span></label>
+          <div class="field" style="margin-top:10px">
+            <label class="lbl" for="nsParent">NSman Parent Relief (max 2)</label>
+            <input type="number" id="nsParent" value="0" min="0" max="2" step="1">
+            <div class="hint">$750 each.</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="group">
+        <summary>Donations <span class="gtag" id="gDon">$0</span></summary>
+        <div class="gbody">
+          <div class="field">
+            <label class="lbl" for="donations">Cash donations to approved IPCs</label>
+            <div class="money"><input type="number" id="donations" value="0" min="0" step="100"></div>
+            <div class="hint">Deducted at <b>250%</b> of the amount given. This is a deduction from assessable income, so it sits <i>outside</i> the $80,000 relief cap.</div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <div class="disclaimer">
+      <b>Estimate only.</b> Built from published IRAS and CPF rules; it doesn't know your actual records, unusual income types, or edge cases. Check the figure against IRAS's own calculator before acting on it, and speak to a tax adviser for anything material.
+    </div>
+  </div>
+
+  <!-- ==================== RESULTS ==================== -->
+  <div>
+
+    <section class="card">
+      <div class="card-head"><h2>Pay, reconstructed</h2>
+        <p class="sub" id="payReconSub">From your take-home, working backwards through the CPF rates.</p>
+      </div>
+      <div class="card-body">
+        <div class="row2" style="gap:24px">
+          <table class="ledger">
+            <tr><td>Monthly gross salary</td><td class="num" id="oMonthlyGross">$0</td></tr>
+            <tr class="sub"><td>less employee CPF</td><td class="num" id="oMonthlyCpf">$0</td></tr>
+            <tr><td>Monthly take-home</td><td class="num" id="oMonthlyNet">$0</td></tr>
+            <tr><td>Bonus (gross)</td><td class="num" id="oBonus">$0</td></tr>
+            <tr class="sub"><td>less CPF on bonus</td><td class="num" id="oBonusCpf">$0</td></tr>
+            <tr class="total"><td>Annual gross income</td><td class="num" id="oAnnualGross">$0</td></tr>
+          </table>
+          <table class="ledger">
+            <tr><td>Employee CPF for the year</td><td class="num" id="oEeCpf">$0</td></tr>
+            <tr><td><b>Employer CPF for the year</b></td><td class="num" id="oErCpf">$0</td></tr>
+            <tr class="sub"><td>your contribution rate</td><td class="num" id="oEeRate">0%</td></tr>
+            <tr class="sub"><td>employer's rate</td><td class="num" id="oErRate">0%</td></tr>
+            <tr><td>Total into your CPF accounts</td><td class="num" id="oTotalCpf">$0</td></tr>
+            <tr class="total"><td>Total cost to your employer</td><td class="num" id="oEmployerCost">$0</td></tr>
+          </table>
+        </div>
+        <div id="cpfNotes" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Tax computation</h2>
+        <p class="sub" id="yaSub">Year of Assessment 2027 — tax on income earned in 2026.</p>
+      </div>
+      <div class="card-body">
+        <div class="row2" style="gap:24px">
+          <table class="ledger">
+            <tr><td>Employment income</td><td class="num" id="cEmp">$0</td></tr>
+            <tr><td>Other income</td><td class="num" id="cOther">$0</td></tr>
+            <tr><td>Employment expenses</td><td class="num" id="cExp">$0</td></tr>
+            <tr><td>Donations (250%)</td><td class="num" id="cDon">$0</td></tr>
+            <tr class="total"><td>Assessable income</td><td class="num" id="cAssessable">$0</td></tr>
+          </table>
+          <table class="ledger">
+            <tr><td>Total reliefs claimed</td><td class="num" id="cReliefRaw">$0</td></tr>
+            <tr class="sub"><td>capped at $80,000</td><td class="num" id="cReliefCap">$0</td></tr>
+            <tr class="total"><td>Chargeable income</td><td class="num" id="cChargeable">$0</td></tr>
+            <tr><td>Gross tax</td><td class="num" id="cGrossTax">$0</td></tr>
+            <tr><td>Rebates (PTR)</td><td class="num" id="cRebate">$0</td></tr>
+            <tr class="total"><td>Net tax payable</td><td class="num" id="cNetTax">$0</td></tr>
+          </table>
+        </div>
+
+        <h3 style="margin-top:24px; font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)">Where your income lands</h3>
+        <div class="ladder" id="ladder"></div>
+        <div class="ladder-key">
+          <span><span class="key-swatch" style="background:var(--accent)"></span>income taxed in this band</span>
+          <span><span class="key-swatch" style="background:var(--keep)"></span>where you'd land after the top suggestion</span>
+          <span>Right column = tax from that band</span>
+        </div>
+
+        <div id="taxNotes" style="margin-top:18px"></div>
+      </div>
+    </section>
+
+    <section>
+      <div style="display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin:26px 0 14px">
+        <div>
+          <h2 style="font-size:19px">3 · Ways to pay less tax</h2>
+          <p class="sub" id="movesSub">Ranked by what they'd actually save you, at your marginal rate. Every one has a cost — read the right-hand column.</p>
+        </div>
+        <div class="chip" id="marginalChip">marginal rate 0%</div>
+      </div>
+      <div class="movelist" id="moves"></div>
+    </section>
+
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <h3>What this models</h3>
+        <ul>
+          <li>Resident tax rates, unchanged since YA 2024 (0% to 24% across 12 bands).</li>
+          <li>CPF at 2026 rates: $8,000 Ordinary Wage ceiling, $102,000 total annual wage ceiling, $37,740 CPF Annual Limit.</li>
+          <li>Additional Wage ceiling = $102,000 − Ordinary Wages subject to CPF for the year.</li>
+          <li>The $80,000 personal relief cap, applied after all reliefs are summed.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>What it doesn't</h3>
+        <ul>
+          <li>Non-resident tax (flat 15% on employment income or resident rates, whichever is higher; 24% on most other income).</li>
+          <li>Self-employed CPF/MediSave obligations, and the Not Ordinarily Resident scheme.</li>
+          <li>Course Fees Relief — withdrawn from YA 2026 — and Foreign Domestic Worker Levy Relief, which lapsed after YA 2024.</li>
+          <li>Low-wage CPF phase-in below $750/month is approximated.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Check against the source</h3>
+        <ul>
+          <li><a href="https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/tax-residency-and-tax-rates/individual-income-tax-rates" target="_blank" rel="noopener">IRAS — individual income tax rates</a></li>
+          <li><a href="https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/tax-reliefs-rebates-and-deductions/tax-reliefs" target="_blank" rel="noopener">IRAS — tax reliefs</a></li>
+          <li><a href="https://www.iras.gov.sg/taxes/individual-income-tax/basics-of-individual-income-tax/special-tax-schemes/srs-contributions" target="_blank" rel="noopener">IRAS — SRS contributions and tax relief</a></li>
+          <li><a href="https://www.cpf.gov.sg/employer/employer-obligations/how-much-cpf-contributions-to-pay" target="_blank" rel="noopener">CPF Board — contribution rates</a></li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:20px; color:var(--ink-3)">Not financial or tax advice. Rules for YA 2027 are provisional — the Budget can change rates, reliefs and rebates before that assessment year.</p>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+/* ============================================================
+   1. Rules & rates
+   ============================================================ */
+
+// Resident tax bands, unchanged from YA 2024 onward.
+// [width of band, rate]
+const BANDS = [
+  [ 20000, 0.000],
+  [ 10000, 0.020],
+  [ 10000, 0.035],
+  [ 40000, 0.070],
+  [ 40000, 0.115],
+  [ 40000, 0.150],
+  [ 40000, 0.180],
+  [ 40000, 0.190],
+  [ 40000, 0.195],
+  [ 40000, 0.200],
+  [180000, 0.220],
+  [500000, 0.230],
+  [Infinity, 0.240]
+];
+
+const YEARS = {
+  2026: {
+    ya: 2027,
+    provisional: true,
+    owCeiling: 8000,
+    annualWageCeiling: 102000,
+    annualLimit: 37740,
+    // maxAge is inclusive: "55 and below", "above 55 to 60", ...
+    cpf: [
+      {maxAge: 55,  er: 0.170, ee: 0.200},
+      {maxAge: 60,  er: 0.160, ee: 0.180},
+      {maxAge: 65,  er: 0.125, ee: 0.125},
+      {maxAge: 70,  er: 0.090, ee: 0.075},
+      {maxAge: 999, er: 0.075, ee: 0.050}
+    ]
+  },
+  2025: {
+    ya: 2026,
+    provisional: false,
+    owCeiling: 7400,
+    annualWageCeiling: 102000,
+    annualLimit: 37740,
+    cpf: [
+      {maxAge: 55,  er: 0.170, ee: 0.200},
+      {maxAge: 60,  er: 0.155, ee: 0.170},
+      {maxAge: 65,  er: 0.120, ee: 0.115},
+      {maxAge: 70,  er: 0.090, ee: 0.075},
+      {maxAge: 999, er: 0.075, ee: 0.050}
+    ]
+  }
+};
+
+const RELIEF_CAP     = 80000;
+const SRS_CAP_LOCAL  = 15300;
+const SRS_CAP_FOREIGN= 35700;
+const CPF_TOPUP_CAP  = 8000;   // each of self / family
+const LIFE_CPF_LIMIT = 5000;   // life insurance relief only if CPF below this
+
+/* ============================================================
+   2. Helpers
+   ============================================================ */
+
+const $ = id => document.getElementById(id);
+const radio = name => document.querySelector('input[name="' + name + '"]:checked').value;
+const numOf = id => { const v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; };
+const intOf = id => { const v = parseInt($(id).value, 10); return isFinite(v) && v > 0 ? v : 0; };
+
+const money  = n => '$' + Math.round(n).toLocaleString('en-SG');
+const money2 = n => '$' + n.toLocaleString('en-SG', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const pct    = n => { const v = Math.round(n * 1000) / 10; return v.toFixed(v % 1 === 0 ? 0 : 1) + '%'; };
+const pct2   = n => (n * 100).toFixed(2) + '%';
+
+function taxOn(chargeable) {
+  let left = Math.max(0, chargeable), tax = 0;
+  for (const [width, rate] of BANDS) {
+    if (left <= 0) break;
+    const slice = Math.min(left, width);
+    tax += slice * rate;
+    left -= slice;
+  }
+  return tax;
+}
+
+// The rate the *next* dollar would pay. At an exact band edge that is the
+// band above, which is what matters when you're deciding whether to add relief.
+function marginalBand(chargeable) {
+  let edge = 0;
+  for (let i = 0; i < BANDS.length; i++) {
+    edge += BANDS[i][0];
+    if (chargeable < edge) return {index: i, rate: BANDS[i][1], nextEdge: edge};
+  }
+  const last = BANDS.length - 1;
+  return {index: last, rate: BANDS[last][1], nextEdge: Infinity};
+}
+const marginalRate = c => marginalBand(c).rate;
+
+/* ============================================================
+   3. CPF
+   ============================================================ */
+
+function cpfRates(cfg, age) {
+  for (const band of cfg.cpf) if (age <= band.maxAge) return band;
+  return cfg.cpf[cfg.cpf.length - 1];
+}
+
+// Employee CPF on one month of Ordinary Wages.
+// Above $750 the full rate applies; $500–$750 phases in linearly
+// (which reproduces CPF's own 0.6·(TW−500) style formula exactly).
+function eeOnMonth(gross, cfg, age) {
+  const r = cpfRates(cfg, age);
+  const wage = Math.min(gross, cfg.owCeiling);
+  if (gross <= 50) return 0;
+  if (gross <= 500) return 0;
+  if (gross < 750) return r.ee * 750 * (gross - 500) / 250;
+  return r.ee * wage;
+}
+
+function erOnMonth(gross, cfg, age) {
+  const r = cpfRates(cfg, age);
+  if (gross <= 50) return 0;
+  return r.er * Math.min(gross, cfg.owCeiling);
+}
+
+// Invert take-home → gross by bisection. Monotonic, so this is exact
+// to the cent and handles the OW-ceiling kink without special-casing.
+function grossFromNet(net, cfg, age, isMember) {
+  if (!isMember) return net;
+  let lo = net, hi = net * 2 + 10000;
+  for (let i = 0; i < 200; i++) {
+    const mid = (lo + hi) / 2;
+    if (mid - eeOnMonth(mid, cfg, age) < net) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+function computeCpf(monthlyGross, bonus, cfg, age, isMember) {
+  if (!isMember) {
+    return {
+      eeMonth: 0, erMonth: 0, eeBonus: 0, erBonus: 0,
+      eeYear: 0, erYear: 0, owSubject: 0, awSubject: 0,
+      awCeiling: 0, rates: {ee: 0, er: 0}, owCapped: false, awCapped: false
+    };
+  }
+  const r = cpfRates(cfg, age);
+  const eeMonth = eeOnMonth(monthlyGross, cfg, age);
+  const erMonth = erOnMonth(monthlyGross, cfg, age);
+  const owSubject = Math.min(monthlyGross, cfg.owCeiling) * 12;
+  const awCeiling = Math.max(0, cfg.annualWageCeiling - owSubject);
+  const awSubject = Math.min(bonus, awCeiling);
+  return {
+    eeMonth, erMonth,
+    eeBonus: r.ee * awSubject,
+    erBonus: r.er * awSubject,
+    eeYear: eeMonth * 12 + r.ee * awSubject,
+    erYear: erMonth * 12 + r.er * awSubject,
+    owSubject, awSubject, awCeiling, rates: r,
+    owCapped: monthlyGross > cfg.owCeiling,
+    awCapped: bonus > awCeiling
+  };
+}
+
+/* ============================================================
+   4. Reliefs
+   ============================================================ */
+
+function earnedIncomeRelief(age, earnedIncome) {
+  const base = age >= 60 ? 8000 : age >= 55 ? 6000 : 1000;
+  return Math.min(base, earnedIncome);
+}
+
+function wmcrAmount(n, regime, earnedIncome) {
+  if (n <= 0) return 0;
+  const fixed = [8000, 10000, 12000];
+  const pcts  = [0.15, 0.20, 0.25];
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const k = Math.min(i, 2);
+    total += regime === 'fixed' ? fixed[k] : pcts[k] * earnedIncome;
+  }
+  return Math.min(total, earnedIncome); // WMCR can't exceed earned income
+}
+
+/* ============================================================
+   5. The model
+   ============================================================ */
+
+function model() {
+  const year   = $('incomeYear').value;
+  const cfg    = YEARS[year];
+  const member = radio('cpfStatus') === 'member';
+  const age    = Math.max(16, intOf('age') || 30);
+  const mode   = radio('inputMode');
+  const pay    = numOf('monthlyPay');
+  const bMonths= numOf('bonusMonths');
+
+  // --- pay ---
+  const monthlyGross = mode === 'gross' ? pay : grossFromNet(pay, cfg, age, member);
+  const bonus  = monthlyGross * bMonths;
+  const cpf    = computeCpf(monthlyGross, bonus, cfg, age, member);
+  const gross  = monthlyGross * 12 + bonus;
+  const takeHome = gross - cpf.eeYear;
+
+  // --- income ---
+  const other    = numOf('otherIncome');
+  const expenses = numOf('empExpenses');
+  const donations= numOf('donations');
+  const earnedIncome = Math.max(0, gross - expenses);
+  const totalIncome  = gross + other;
+  const assessable   = Math.max(0, totalIncome - expenses - donations * 2.5);
+
+  // --- reliefs ---
+  const rEarned = earnedIncomeRelief(age, earnedIncome);
+  const rCpf    = cpf.eeYear;
+
+  const srsCap  = member ? SRS_CAP_LOCAL : SRS_CAP_FOREIGN;
+  const rSrs    = Math.min(numOf('srs'), srsCap);
+  const rTopSelf= Math.min(numOf('cpfTopSelf'), CPF_TOPUP_CAP);
+  const rTopFam = Math.min(numOf('cpfTopFam'),  CPF_TOPUP_CAP);
+
+  const mandatoryTotal = cpf.eeYear + cpf.erYear;
+  const vcRoom  = member ? Math.max(0, cfg.annualLimit - mandatoryTotal) : 0;
+  const rVc     = Math.min(numOf('vcMa'), vcRoom);
+
+  const lifeRoom = Math.max(0, LIFE_CPF_LIMIT - rCpf);
+  const rLife    = Math.min(numOf('lifePrem'), lifeRoom);
+
+  const rSpouse = parseFloat($('spouse').value) || 0;
+  const nKids   = intOf('kids');
+  const nKidsDis= intOf('kidsDis');
+  const rQcr    = nKids * 4000 + nKidsDis * 7500;
+
+  const isWm    = $('isWorkingMother').checked;
+  const nWmcr   = isWm ? intOf('wmcrKids') : 0;
+  let   rWmcr   = isWm ? wmcrAmount(nWmcr, $('wmcrRegime').value, earnedIncome) : 0;
+  // QCR + WMCR is capped at $50,000 per child
+  const childCap = Math.max(nKids + nKidsDis, nWmcr) * 50000;
+  if (rQcr + rWmcr > childCap) rWmcr = Math.max(0, childCap - rQcr);
+
+  const rParent = intOf('parents') * (parseFloat($('parentMode').value) || 0);
+  const rGcr    = $('gcr').checked ? 3000 : 0;
+  const rSib    = intOf('siblings') * 5500;
+
+  const rNsman  = parseFloat($('nsman').value) || 0;
+  const rNsWife = $('nsWife').checked ? 750 : 0;
+  const rNsPar  = intOf('nsParent') * 750;
+
+  const reliefRaw = rEarned + rCpf + rSrs + rTopSelf + rTopFam + rVc + rLife +
+                    rSpouse + rQcr + rWmcr + rParent + rGcr + rSib +
+                    rNsman + rNsWife + rNsPar;
+  const reliefUsed = Math.min(reliefRaw, RELIEF_CAP);
+  const reliefHeadroom = Math.max(0, RELIEF_CAP - reliefRaw);
+
+  const chargeable = Math.max(0, assessable - reliefUsed);
+  const grossTax   = taxOn(chargeable);
+  const ptr        = Math.min(numOf('ptr'), grossTax);
+  const netTax     = Math.max(0, grossTax - ptr);
+  const marginal   = marginalRate(chargeable);
+
+  return {
+    year, cfg, member, age, mode,
+    monthlyGross, bonus, gross, cpf, takeHome,
+    other, expenses, donations, earnedIncome, totalIncome, assessable,
+    rEarned, rCpf, rSrs, srsCap, rTopSelf, rTopFam, rVc, vcRoom, rLife, lifeRoom,
+    rSpouse, rQcr, rWmcr, rParent, rGcr, rSib, rNsman, rNsWife, rNsPar,
+    reliefRaw, reliefUsed, reliefHeadroom,
+    chargeable, grossTax, ptr, netTax, marginal, mandatoryTotal
+  };
+}
+
+// What a further $X of relief is worth, respecting the $80k cap.
+function savingFrom(m, amount) {
+  const eff = Math.min(amount, m.reliefHeadroom);
+  if (eff <= 0 || m.chargeable <= 0) return {eff: 0, saving: 0};
+  const saving = taxOn(m.chargeable) - taxOn(Math.max(0, m.chargeable - eff));
+  return {eff, saving};
+}
+
+/* ============================================================
+   6. The levers
+   ============================================================ */
+
+function buildMoves(m) {
+  const moves = [];
+  const capped = m.reliefHeadroom <= 0;
+
+  /* ---------- SRS ---------- */
+  {
+    const room = Math.max(0, m.srsCap - m.rSrs);
+    const {eff, saving} = savingFrom(m, room);
+    moves.push({
+      rank: saving, kind: room > 0 && saving > 0 ? 'live' : 'dead',
+      title: 'Contribute to your SRS account',
+      what: 'Cash you put into the Supplementary Retirement Scheme is deducted from your income dollar for dollar, up to ' +
+            money(m.srsCap) + ' a year' + (m.member ? ' for Citizens and PRs' : ' for foreigners') + '.',
+      saving, effAmount: eff,
+      chips: [
+        {t: 'room left ' + money(room)},
+        {t: 'cap ' + money(m.srsCap)},
+        {t: 'must be in by 31 Dec', cls: 'warn'}
+      ],
+      pros: [
+        '<b>Immediate deduction at your top rate.</b> At a marginal rate of ' + pct(m.marginal) + ', every $1,000 in cuts about ' + money(1000 * m.marginal) + ' off this year\'s bill.',
+        '<b>Only 50% is taxable on withdrawal</b> if you wait until the statutory retirement age that applied when you made your first contribution. Half the money is permanently out of the tax net.',
+        '<b>You can invest it.</b> Idle SRS cash earns a token 0.05% p.a., but it can go into unit trusts, ETFs, SSBs, T-bills, fixed deposits, insurance and shares — and gains inside SRS aren\'t taxed as they accrue.',
+        '<b>Withdrawals spread over 10 years.</b> Draw down in slices that stay under the $20,000 tax-free band and the 50% that <i>is</i> taxable can attract $0 tax.',
+        'Contributions are voluntary and variable — you can put in $0 next year with no penalty.'
+      ],
+      cons: [
+        '<b>Locked until the statutory retirement age</b> as at your first contribution (63 until 30 Jun 2026, 64 from 1 Jul 2026). Contribute a token $1 early to lock in the lower age before it rises.',
+        '<b>Withdraw early and it hurts twice:</b> 100% of the withdrawal is taxable <i>and</i> you pay a 5% penalty on top. Only death, terminal illness, medical grounds and bankruptcy are excused.',
+        '<b>The 50% concession isn\'t a free pass.</b> If your retirement income is already high, the taxable half is stacked on top of it and can be taxed at a real rate.',
+        '<b>Uninvested cash bleeds to inflation</b> at 0.05% p.a. SRS only pays off if you actually invest it — plenty of accounts sit in cash for a decade.',
+        'Ten-year withdrawal window: a large balance may not fit under the tax-free band, so part gets taxed anyway. Balances still inside after 10 years are taxed in one hit.',
+        'It counts toward the same $80,000 relief cap as everything else' + (capped ? ' — <b>which you have already hit, so this would save you nothing</b>.' : '.')
+      ]
+    });
+  }
+
+  /* ---------- CPF top-up: self ---------- */
+  {
+    const room = Math.max(0, CPF_TOPUP_CAP - m.rTopSelf);
+    const {eff, saving} = savingFrom(m, room);
+    const acct = m.age >= 55 ? 'Retirement Account' : 'Special Account';
+    moves.push({
+      rank: saving - 1, kind: room > 0 && saving > 0 ? 'live' : 'dead',
+      title: 'Cash top-up to your own ' + acct,
+      what: 'Cash top-ups under the Retirement Sum Topping-Up scheme give relief of up to ' + money(CPF_TOPUP_CAP) + ' a year, on top of your compulsory CPF.',
+      saving, effAmount: eff,
+      chips: [{t: 'room left ' + money(room)}, {t: 'cap ' + money(CPF_TOPUP_CAP)}, {t: '4%+ risk-free', cls: 'good'}],
+      pros: [
+        '<b>Relief plus a guaranteed 4%+ a year</b> in the SA/RA — government-backed, no market risk.',
+        'An extra 1% on your first $60,000 across accounts (and another 1% on the first $30,000 once you\'re 55+) pushes the effective return higher still.',
+        'Decades of compounding: money added in your 30s roughly doubles by 55 at 4%, before any further top-ups.',
+        'Same relief whether you top up in January or December, so you can do it whenever cash allows.'
+      ],
+      cons: [
+        '<b>Irreversible.</b> There is no early withdrawal, no hardship clause, no penalty option — the money is gone until your payout eligibility age. This is stricter than SRS.',
+        '<b>Cannot be used for housing.</b> SA/RA money can\'t service your mortgage, unlike your Ordinary Account.',
+        'Relief stops once the recipient hits the Full Retirement Sum — top-ups beyond it don\'t attract relief.',
+        'Since 2025 the Special Account closes at 55 and top-ups go to the Retirement Account instead.',
+        '<b>Top-ups that attract a Matched Retirement Savings Scheme grant get no relief</b> from YA 2026 onward — you take the grant or the relief, not both.',
+        'Opportunity cost: 4% is safe, but a long-horizon investor might reasonably expect more elsewhere.'
+      ]
+    });
+  }
+
+  /* ---------- CPF top-up: family ---------- */
+  {
+    const room = Math.max(0, CPF_TOPUP_CAP - m.rTopFam);
+    const {eff, saving} = savingFrom(m, room);
+    moves.push({
+      rank: saving - 2, kind: room > 0 && saving > 0 ? 'live' : 'dead',
+      title: 'Cash top-up to a family member\'s CPF',
+      what: 'Topping up parents, grandparents, spouse or siblings gives you a separate ' + money(CPF_TOPUP_CAP) + ' of relief — stacked on top of your own top-up relief.',
+      saving, effAmount: eff,
+      chips: [{t: 'room left ' + money(room)}, {t: 'separate ' + money(CPF_TOPUP_CAP) + ' cap', cls: 'good'}],
+      pros: [
+        '<b>Doubles your top-up headroom</b> to $16,000 when combined with topping up your own account.',
+        'The money still earns 4%+ for the recipient, so it isn\'t "spent" — it\'s moved.',
+        'Practical way to support ageing parents that happens to be tax-efficient.',
+        'Can be combined with Parent Relief if they also meet those conditions.'
+      ],
+      cons: [
+        '<b>The money is no longer yours.</b> It belongs to the recipient, and it\'s locked in their CPF on their timeline, not yours.',
+        'For a spouse or sibling, relief only applies if their annual income was $4,000 or less (or they have a disability).',
+        'No relief once the recipient is already at the Full Retirement Sum.',
+        'Same MRSS restriction: matched top-ups get no relief from YA 2026.',
+        'Sits inside the $80,000 cap' + (capped ? ' — <b>already hit, so no benefit</b>.' : '.')
+      ]
+    });
+  }
+
+  /* ---------- Voluntary MediSave ---------- */
+  {
+    const room = Math.max(0, m.vcRoom - m.rVc);
+    const {eff, saving} = savingFrom(m, room);
+    moves.push({
+      rank: saving - 3, kind: room > 0 && saving > 0 ? 'live' : (m.member ? 'dead' : 'dead'),
+      title: 'Voluntary contribution to MediSave',
+      what: 'You can top up MediSave up to the CPF Annual Limit of ' + money(m.cfg.annualLimit) +
+            ' less your mandatory contributions — ' + money(m.vcRoom) + ' of room at your income.',
+      saving, effAmount: eff,
+      chips: [{t: 'room ' + money(room)}, {t: 'annual limit ' + money(m.cfg.annualLimit)}],
+      pros: [
+        '<b>Full relief for the amount contributed</b>, subject to your remaining annual-limit room.',
+        'Earns 4%+ like the rest of your CPF, and the same extra-interest tiers apply.',
+        'Immediately useful — it pays MediShield Life and Integrated Shield premiums, hospital bills, chronic-condition treatment and approved outpatient care.',
+        'Unlike SA top-ups, you get real use of it long before retirement, through medical bills you\'d be paying anyway.'
+      ],
+      cons: [
+        '<b>Medical use only</b> — it can\'t be withdrawn as cash, spent on housing, or invested in the market.',
+        'Hard-stopped by the Basic Healthcare Sum. Once MediSave is at the BHS, further contributions overflow and stop attracting relief.',
+        '<b>Your room shrinks as your salary rises.</b> At a high income your mandatory CPF almost fills the ' + money(m.cfg.annualLimit) + ' annual limit, leaving little space.',
+        'Shares the annual limit with any other voluntary CPF contribution, so it competes with them.',
+        'Counts toward the $80,000 relief cap.'
+      ]
+    });
+  }
+
+  /* ---------- Donations ---------- */
+  {
+    // Donations reduce assessable income, so the $80k relief cap doesn't apply.
+    const sample = 1000;
+    const eff = sample * 2.5;
+    const saving = taxOn(m.chargeable) - taxOn(Math.max(0, m.chargeable - eff));
+    moves.push({
+      rank: -10, kind: 'info',
+      title: 'Donate to an approved IPC',
+      what: 'Cash donations to Institutions of a Public Character are deducted at 250% of what you give — and this deduction sits outside the $80,000 relief cap.',
+      saving, savingLabel: 'per ' + money(sample) + ' given', effAmount: eff,
+      chips: [{t: '250% deduction', cls: 'good'}, {t: 'outside the $80k cap', cls: 'good'}, {t: '250% rate runs to 31 Dec 2026', cls: 'warn'}],
+      pros: [
+        '<b>The only major lever that escapes the $80,000 cap</b> — it reduces assessable income rather than being a relief.',
+        'At your marginal rate of ' + pct(m.marginal) + ', ' + money(sample) + ' given creates a ' + money(sample * 2.5) + ' deduction and saves roughly ' + money(saving) + '.',
+        'Unused deductions carry forward for up to 5 years, so a large gift isn\'t wasted in a low-income year.',
+        'Approved IPC donations are auto-included in your return — nothing to file.'
+      ],
+      cons: [
+        '<b>You are still out of pocket.</b> Give ' + money(sample) + ' and you save ' + money(saving) + ' — a net cost of ' + money(sample - saving) + '. Donating to save tax always loses money; do it because you want to give.',
+        'Must be a cash donation to an approved IPC — donations to overseas charities, GoFundMe-style campaigns, or non-IPC bodies get nothing.',
+        'Must land within the calendar year to count for that Year of Assessment.',
+        'Irrevocable.'
+      ]
+    });
+  }
+
+  /* ---------- Life insurance relief ---------- */
+  {
+    const room = Math.max(0, m.lifeRoom - m.rLife);
+    const {eff, saving} = savingFrom(m, room);
+    moves.push({
+      rank: room > 0 ? saving - 4 : -20, kind: room > 0 && saving > 0 ? 'live' : 'dead',
+      title: 'Life Insurance Relief',
+      what: room > 0
+        ? 'Your employee CPF for the year is ' + money(m.rCpf) + ', under the ' + money(LIFE_CPF_LIMIT) + ' threshold, so you have ' + money(room) + ' of room for premiums on your own life policies.'
+        : 'Not available to you: this relief only exists when your compulsory employee CPF is below ' + money(LIFE_CPF_LIMIT) + ' for the year, and yours is ' + money(m.rCpf) + '.',
+      saving, effAmount: eff,
+      chips: [{t: 'room ' + money(room)}, {t: 'capped at 7% of sum assured'}],
+      pros: [
+        'Relief on premiums you\'re likely paying anyway for protection you actually need.',
+        'Useful for the low-CPF cases it was designed for — foreigners, the self-employed, people on very low wages.'
+      ],
+      cons: [
+        '<b>Effectively unavailable to most salaried Citizens and PRs</b>, whose CPF passes $5,000 at around $2,100/month of pay.',
+        'Capped at the lower of your premiums, 7% of the insured value, and the gap up to $5,000.',
+        'Only policies on your own or your spouse\'s life count, and the policy must be bought from a Singapore-registered insurer.',
+        '<b>Never buy insurance for the relief.</b> The tax saved is a fraction of a premium you\'d be paying for years.'
+      ]
+    });
+  }
+
+  /* ---------- Unclaimed family reliefs ---------- */
+  {
+    const missing = [];
+    if (m.rParent === 0) missing.push('<b>Parent Relief</b> — $5,500 to $14,000 for a dependant parent or grandparent aged 55+ with income of $8,000 or less. Up to 2 dependants.');
+    if (m.rSib === 0)    missing.push('<b>Sibling (Disability) Relief</b> — $5,500 per sibling you support.');
+    if (m.rNsman === 0)  missing.push('<b>NSman Relief</b> — $1,500 to $5,000 if you\'re an operationally-ready NSman.');
+    if (m.rSpouse === 0) missing.push('<b>Spouse Relief</b> — $2,000 if your spouse earned $4,000 or less.');
+    if (m.rGcr === 0)    missing.push('<b>Grandparent Caregiver Relief</b> — $3,000 for working mothers whose parent or in-law looks after the child.');
+    if (missing.length) {
+      moves.push({
+        rank: -30, kind: 'info',
+        title: 'Reliefs you haven\'t claimed',
+        what: 'These cost nothing to claim — they reflect circumstances you\'re already in. The most commonly missed money on the table.',
+        saving: null,
+        chips: [{t: missing.length + ' not claimed', cls: 'warn'}, {t: 'zero cost', cls: 'good'}],
+        pros: missing.concat(['No cash outlay at all — unlike SRS or top-ups, you aren\'t locking anything away.']),
+        cons: [
+          'Each has strict conditions (income tests, age, living arrangements, dependency) — read the IRAS page before claiming.',
+          '<b>Only one person can claim per dependant.</b> Agree with your siblings first, or IRAS will apportion it for you.',
+          'Wrongly claimed reliefs get clawed back with penalties, so don\'t tick boxes optimistically.'
+        ]
+      });
+    }
+  }
+
+  /* ---------- Bracket-edge note ---------- */
+  {
+    const band = marginalBand(m.chargeable);
+    const currRate = band.rate;
+    const nextRate = band.index + 1 < BANDS.length ? BANDS[band.index + 1][1] : currRate;
+    const toEdge = Math.max(0, band.nextEdge - m.chargeable);
+    if (m.chargeable > 0 && isFinite(toEdge) && toEdge > 0) {
+      moves.push({
+        rank: -40, kind: 'info',
+        title: 'Where your next bracket starts',
+        what: 'Your chargeable income is ' + money(m.chargeable) + '. The next ' + money(toEdge) +
+              ' is taxed at ' + pct(currRate) + '; anything above that at ' + pct(nextRate) + '.',
+        saving: null,
+        chips: [{t: money(toEdge) + ' of headroom'}, {t: pct(currRate) + ' → ' + pct(nextRate)}],
+        pros: [
+          'Singapore\'s brackets are marginal, so crossing one <b>never</b> makes you worse off — only the dollars above the line pay the higher rate.',
+          'If a bonus or a side income would push you over, relief timed into the same calendar year pulls you back under.',
+          'Reliefs are worth most to people in the higher bands — the same $1,000 saves ' + money(1000 * currRate) + ' here versus $20 in the 2% band.'
+        ],
+        cons: [
+          '<b>Don\'t turn down income to stay in a bracket.</b> It\'s always a losing trade in a marginal system.',
+          'Chasing the edge exactly is fragile — a year-end bonus, a rent increase or a dividend can move you after you\'ve committed cash to SRS.',
+          'Relief only helps if you have tax to reduce: below $20,000 of chargeable income you pay nothing, so contributions buy you no tax saving at all.'
+        ]
+      });
+    }
+  }
+
+  /* ---------- Things that no longer work ---------- */
+  moves.push({
+    rank: -50, kind: 'dead',
+    title: 'Things that no longer work',
+    what: 'Advice that circulates online but is now dead — worth knowing so you don\'t plan around it.',
+    saving: null,
+    chips: [{t: 'withdrawn', cls: 'warn'}],
+    pros: [
+      '<b>Course Fees Relief</b> (up to $5,500) is withdrawn from YA 2026. Courses taken in 2025 onward earn nothing.',
+      '<b>Foreign Domestic Worker Levy Relief</b> lapsed after YA 2024.',
+      '<b>The personal income tax rebate is not automatic.</b> There was 50% (capped $200) for YA 2024 and 60% (capped $200) for YA 2025, but none for YA 2026.',
+      '<b>NSman Relief is given automatically</b> by MINDEF/SPF/SCDF records — you don\'t claim it, and there\'s nothing to optimise.'
+    ],
+    cons: [
+      'There is no deduction for your own mortgage interest, rent, medical bills, tuition, or car — those simply aren\'t reliefs in Singapore.',
+      'Buying an insurance or investment product "for the tax relief" almost always costs more in fees and lock-in than it saves.',
+      'Restructuring salary as director\'s fees, or shifting income to a spouse, does not work the way it does elsewhere — and aggressive arrangements risk anti-avoidance action under s.33 of the Income Tax Act.',
+      '<b>Anything relying on undeclared income is evasion, not planning.</b> Penalties run to 400% of the tax undercharged, plus prosecution.'
+    ]
+  });
+
+  /* ---------- Relief cap warning ---------- */
+  if (m.reliefRaw > RELIEF_CAP * 0.9) {
+    moves.unshift({
+      rank: 1e9, kind: capped ? 'dead' : 'info',
+      title: capped ? 'You have hit the $80,000 relief cap' : 'You are close to the $80,000 relief cap',
+      what: 'Total reliefs claimed: ' + money(m.reliefRaw) + '. Headroom left: ' + money(m.reliefHeadroom) + '.',
+      saving: null,
+      chips: [{t: money(m.reliefRaw) + ' / ' + money(RELIEF_CAP), cls: capped ? 'warn' : ''}],
+      pros: [
+        'Donations at 250% still work — they reduce assessable income and <b>aren\'t</b> subject to this cap.',
+        'The Parenthood Tax Rebate is a rebate against tax payable, also outside the cap.',
+        'Deductible employment expenses and rental expenses reduce income before reliefs, so they still bite.'
+      ],
+      cons: [
+        capped
+          ? '<b>Every additional dollar of SRS or CPF top-up now saves you exactly $0 in tax</b> while still being locked away. Stop contributing for relief.'
+          : 'You have only ' + money(m.reliefHeadroom) + ' of useful room left — contributions past that are locked up for no tax benefit.',
+        'The cap applies per Year of Assessment and cannot be carried forward.',
+        'Working mothers hit this cap most often, because WMCR is large and stacks with QCR.'
+      ]
+    });
+  }
+
+  moves.sort((a, b) => b.rank - a.rank);
+  return moves;
+}
+
+/* ============================================================
+   7. Render
+   ============================================================ */
+
+function renderLadder(m, ghostChargeable) {
+  const rows = [];
+  const marginalIdx = marginalBand(m.chargeable).index;
+  let edge = 0, remaining = m.chargeable;
+  for (let i = 0; i < BANDS.length; i++) {
+    const [width, rate] = BANDS[i];
+    const lo = edge, hi = edge + width;
+    const inBand = Math.max(0, Math.min(remaining, width));
+    remaining -= inBand;
+    const fill = width === Infinity ? (inBand > 0 ? 100 : 0) : (inBand / width) * 100;
+    const isMarginal = i === marginalIdx;
+    const label = width === Infinity
+      ? 'Above ' + (lo / 1000) + 'k'
+      : (lo / 1000) + 'k – ' + (hi / 1000) + 'k';
+
+    // ghost marker: where the top suggestion would leave you
+    let ghost = '';
+    if (ghostChargeable !== null && ghostChargeable > lo && ghostChargeable <= (width === Infinity ? Infinity : hi)) {
+      const g = width === Infinity ? 0 : ((ghostChargeable - lo) / width) * 100;
+      ghost = '<span class="rung-ghost" style="left:' + g.toFixed(2) + '%"></span>';
+    }
+
+    rows.push(
+      '<div class="rung' + (inBand > 0 ? ' filled' : '') + (isMarginal ? ' marginal' : '') + '">' +
+        '<span class="rung-band">' + label + '</span>' +
+        '<span class="rung-track">' +
+          '<span class="rung-fill" style="width:' + fill.toFixed(2) + '%"></span>' +
+          ghost +
+          '<span class="rung-rate">' + pct(rate) + '</span>' +
+        '</span>' +
+        '<span class="rung-amt">' + (inBand > 0 ? money(inBand * rate) : '—') + '</span>' +
+      '</div>'
+    );
+    edge = hi;
+    if (width === Infinity) break;
+  }
+  $('ladder').innerHTML = rows.join('');
+}
+
+function renderMoves(moves) {
+  $('moves').innerHTML = moves.map(mv => {
+    const chips = (mv.chips || []).map(c => '<span class="chip ' + (c.cls || '') + '">' + c.t + '</span>').join('');
+    let save = '';
+    if (mv.saving !== null && mv.saving !== undefined) {
+      save = '<div class="move-save"><span class="amt">' + money(mv.saving) + '</span>' +
+             '<span class="cap">' + (mv.savingLabel || 'tax saved') + '</span></div>';
+    }
+    return '<article class="move ' + mv.kind + '">' +
+      '<div class="move-head">' +
+        '<div><div class="move-title">' + mv.title + '</div><div class="move-what">' + mv.what + '</div></div>' +
+        save +
+      '</div>' +
+      (chips ? '<div class="move-meta">' + chips + '</div>' : '') +
+      '<div class="pc">' +
+        '<div class="pc-col pros"><div class="pc-h">Pros</div><ul>' +
+          mv.pros.map(p => '<li>' + p + '</li>').join('') + '</ul></div>' +
+        '<div class="pc-col cons"><div class="pc-h">Cons</div><ul>' +
+          mv.cons.map(c => '<li>' + c + '</li>').join('') + '</ul></div>' +
+      '</div>' +
+    '</article>';
+  }).join('');
+}
+
+function render() {
+  const m = model();
+  const cfg = m.cfg;
+
+  // --- labels that depend on mode ---
+  const isNet = m.mode === 'net';
+  $('payLabel').textContent = isNet
+    ? (m.member ? 'Monthly take-home (after CPF)' : 'Monthly take-home')
+    : 'Monthly gross salary';
+  $('payHint').textContent = isNet
+    ? 'The number that actually hits your bank account each month, before bonus.'
+    : 'Your basic monthly salary before any CPF deduction.';
+  $('payReconSub').textContent = isNet
+    ? 'From your take-home, working backwards through the CPF rates.'
+    : 'From your gross salary, forwards through the CPF rates.';
+  $('basisLabel').textContent = 'YA ' + cfg.ya + ' basis';
+  $('yaSub').textContent = 'Year of Assessment ' + cfg.ya + ' — tax on income earned in ' + m.year +
+    (cfg.provisional ? '. Rates assumed unchanged; no rebate announced.' : '.');
+  $('srsHint').textContent = 'Cap ' + money(m.srsCap) + (m.member ? ' (Citizen/PR).' : ' (foreigner).');
+  $('vcHint').textContent = 'Your room: ' + money(m.vcRoom) + ' — the CPF Annual Limit of ' + money(cfg.annualLimit) +
+    ' less your mandatory contributions of ' + money(m.mandatoryTotal) + '.';
+  $('lifeHint').textContent = m.lifeRoom > 0
+    ? 'Room available: ' + money(m.lifeRoom) + ', capped at 7% of the sum assured.'
+    : 'Not available — your employee CPF of ' + money(m.rCpf) + ' already exceeds the $5,000 threshold.';
+  $('wmcrBox').style.display = $('isWorkingMother').checked ? 'block' : 'none';
+
+  // --- tape ---
+  $('tGross').textContent = money(m.gross);
+  $('tNet').textContent   = money(m.takeHome);
+  $('tErCpf').textContent = money(m.cpf.erYear);
+  $('tTax').textContent   = money(m.netTax);
+  $('tEff').textContent   = m.gross > 0 ? pct2(m.netTax / m.gross) : '0.00%';
+  $('tMarg').textContent  = pct(m.marginal);
+
+  // --- pay panel ---
+  $('oMonthlyGross').textContent = money2(m.monthlyGross);
+  $('oMonthlyCpf').textContent   = '−' + money2(m.cpf.eeMonth);
+  $('oMonthlyNet').textContent   = money2(m.monthlyGross - m.cpf.eeMonth);
+  $('oBonus').textContent        = money2(m.bonus);
+  $('oBonusCpf').textContent     = '−' + money2(m.cpf.eeBonus);
+  $('oAnnualGross').textContent  = money(m.gross);
+  $('oEeCpf').textContent        = money(m.cpf.eeYear);
+  $('oErCpf').textContent        = money(m.cpf.erYear);
+  $('oEeRate').textContent       = pct(m.cpf.rates.ee);
+  $('oErRate').textContent       = pct(m.cpf.rates.er);
+  $('oTotalCpf').textContent     = money(m.cpf.eeYear + m.cpf.erYear);
+  $('oEmployerCost').textContent = money(m.gross + m.cpf.erYear);
+
+  // --- CPF notes ---
+  const notes = [];
+  if (!m.member) {
+    notes.push(['info', 'As a foreigner you make no CPF contributions, so your gross <i>is</i> your take-home — and you get no CPF Relief, which means a higher chargeable income than a Citizen or PR on the same salary. Your SRS cap is higher to compensate: ' + money(SRS_CAP_FOREIGN) + '.']);
+  } else {
+    if (m.cpf.owCapped) {
+      notes.push(['info', 'Your salary is above the ' + money(cfg.owCeiling) + ' Ordinary Wage ceiling, so CPF is only charged on the first ' + money(cfg.owCeiling) + ' each month. Every dollar above that is fully take-home — and fully taxable.']);
+    }
+    if (m.cpf.awCapped) {
+      notes.push(['warn', 'Your bonus of ' + money(m.bonus) + ' exceeds the Additional Wage ceiling of ' + money(m.cpf.awCeiling) + ' (= ' + money(cfg.annualWageCeiling) + ' less the ' + money(m.cpf.owSubject) + ' of Ordinary Wages already subject to CPF). Only ' + money(m.cpf.awSubject) + ' of it attracts CPF.']);
+    }
+    if (m.age >= 55 && m.age < 70) {
+      notes.push(['info', 'You are in the "above ' + (m.age < 60 ? '55 to 60' : m.age < 65 ? '60 to 65' : '65 to 70') + '" band. Senior worker rates are still stepping up each year — they rose again on 1 Jan 2026 and are due to rise again in 2027.']);
+    }
+  }
+  if (cfg.provisional) {
+    notes.push(['warn', 'Income year 2026 is assessed in YA 2027, whose rates and reliefs are <b>not final</b>. This uses the current bands and assumes no rebate. Switch to income year 2025 for the confirmed YA 2026 basis.']);
+  }
+  $('cpfNotes').innerHTML = notes.map(n => '<div class="notice ' + n[0] + '">' + n[1] + '</div>').join('');
+
+  // --- reliefs summary tags ---
+  $('rEarned').textContent = money(m.rEarned);
+  $('rCpf').textContent    = money(m.rCpf);
+  const gAuto   = m.rEarned + m.rCpf;
+  const gRetire = m.rSrs + m.rTopSelf + m.rTopFam + m.rVc + m.rLife;
+  const gFamily = m.rSpouse + m.rQcr + m.rWmcr + m.rParent + m.rGcr + m.rSib;
+  const gNs     = m.rNsman + m.rNsWife + m.rNsPar;
+  const tag = (id, v) => { const el = $(id); el.textContent = money(v); el.className = 'gtag' + (v > 0 ? ' on' : ''); };
+  tag('gAuto', gAuto); tag('gRetire', gRetire); tag('gFamily', gFamily);
+  tag('gNs', gNs); tag('gDon', m.donations * 2.5);
+
+  // --- tax computation ---
+  $('cEmp').textContent        = money(m.gross);
+  $('cOther').textContent      = money(m.other);
+  $('cExp').textContent        = '−' + money(m.expenses);
+  $('cDon').textContent        = '−' + money(m.donations * 2.5);
+  $('cAssessable').textContent = money(m.assessable);
+  $('cReliefRaw').textContent  = money(m.reliefRaw);
+  $('cReliefCap').textContent  = '−' + money(m.reliefUsed);
+  $('cChargeable').textContent = money(m.chargeable);
+  $('cGrossTax').textContent   = money(m.grossTax);
+  $('cRebate').textContent     = '−' + money(m.ptr);
+  $('cNetTax').textContent     = money(m.netTax);
+  $('marginalChip').textContent = 'marginal rate ' + pct(m.marginal);
+
+  // --- moves ---
+  const moves = buildMoves(m);
+  const top = moves.find(x => x.kind === 'live' && x.saving > 0);
+  const ghost = top ? Math.max(0, m.chargeable - top.effAmount) : null;
+  renderLadder(m, ghost);
+  $('movesSub').innerHTML = top
+    ? 'Ranked by what they\'d actually save you at your ' + pct(m.marginal) + ' marginal rate. The green marker on the ladder above shows where <b>' + top.title.toLowerCase() + '</b> would leave you.'
+    : (m.chargeable <= 0
+        ? 'Your chargeable income is already below the $20,000 tax-free threshold — <b>you owe no tax, so none of these would save you anything.</b> They\'re listed for when your income rises.'
+        : 'Ranked by what they\'d actually save you at your ' + pct(m.marginal) + ' marginal rate.');
+  renderMoves(moves);
+
+  // --- tax notes ---
+  const tn = [];
+  if (m.chargeable <= 0 && m.gross > 0) {
+    tn.push(['info', 'Chargeable income is nil, so there is no tax to pay. You still need to file if IRAS sends you a notification — a $0 assessment is not the same as no filing obligation.']);
+  }
+  if (m.reliefRaw > RELIEF_CAP) {
+    tn.push(['warn', 'Your reliefs total ' + money(m.reliefRaw) + ' but only ' + money(RELIEF_CAP) + ' can be used. ' + money(m.reliefRaw - RELIEF_CAP) + ' is wasted — money locked into SRS or CPF beyond this point buys you no tax saving.']);
+  }
+  if (m.donations > 0) {
+    tn.push(['info', 'Your ' + money(m.donations) + ' of donations is deducted at 250% — ' + money(m.donations * 2.5) + ' — before reliefs, and is not restricted by the $80,000 cap.']);
+  }
+  $('taxNotes').innerHTML = tn.map(n => '<div class="notice ' + n[0] + '">' + n[1] + '</div>').join('');
+}
+
+/* ============================================================
+   8. Wire up
+   ============================================================ */
+document.addEventListener('input', render);
+document.addEventListener('change', render);
+render();
+</script>
+</body>
+</html>
